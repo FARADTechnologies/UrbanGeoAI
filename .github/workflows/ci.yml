@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint ve test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python kurulumu
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Bağımlılıklar
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: |
+          ruff check src tests
+          ruff format --check src tests
+
+      - name: Testler
+        run: pytest --cov=urbangeoai --cov-report=term-missing
+
+      # Konfigürasyon örneğinin geçerli kaldığını doğrular. Ham veri
+      # bulunmadığı için eksik dizin uyarısı beklenir; burada yalnızca
+      # dosyanın ayrıştırılabildiği kontrol edilir.
+      - name: Konfigürasyon şablonu ayrıştırılabiliyor
+        run: |
+          python - <<'PY'
+          from urbangeoai import config
+          settings = config.load(config.EXAMPLE_CONFIG)
+          assert settings.h3_resolution > 0
+          assert len(settings.bbox) == 4
+          print("konfigürasyon şablonu geçerli")
+          PY
+
+  hygiene:
+    name: Depo hijyeni
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Ham veri ve büyük çıktılar depoya girmemeli. .gitignore bunu
+      # engelliyor; bu adım kuralın delinmediğini doğrular.
+      - name: Takip edilen dosyalarda veri sızıntısı yok
+        run: |
+          set -e
+          offenders=$(git ls-files \
+            | grep -E '\.(parquet|feather|pkl|joblib|h5|pt|onnx)$' || true)
+          if [ -n "$offenders" ]; then
+            echo "Depoda bulunmaması gereken veri dosyaları:"
+            echo "$offenders"
+            exit 1
+          fi
+
+          # CSV yalnızca örnek veri ve test verisi olarak kabul edilir.
+          csvs=$(git ls-files '*.csv' | grep -v -E '^(data/sample|tests/fixtures)/' || true)
+          if [ -n "$csvs" ]; then
+            echo "İzin verilen dizinler dışında CSV bulundu:"
+            echo "$csvs"
+            exit 1
+          fi
+
+      - name: Takip edilen dosyalarda mutlak yerel yol yok
+        run: |
+          set -e
+          hits=$(git ls-files -z \
+            | xargs -0 grep -l -E '([A-Za-z]:\\Users\\|/Users/[a-z]|/home/[a-z])' \
+              -- ':!*.gitignore' 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "Mutlak yerel yol içeren dosyalar:"
+            echo "$hits"
+            exit 1
+          fi
+
+      - name: Büyük dosya yok
+        run: |
+          set -e
+          big=$(git ls-files -z | xargs -0 du -k 2>/dev/null \
+            | awk '$1 > 2048 {print $1" KB\t"$2}' || true)
+          if [ -n "$big" ]; then
+            echo "2 MB üzerindeki dosyalar:"
+            echo "$big"
+            exit 1
+          fi
