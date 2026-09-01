@@ -120,12 +120,40 @@ model = indices.load_model(Path("out/model.json"))["education"]
 index, bands = indices.score_group(new_cells, model)
 ```
 
+## Veri denetimi
+
+POI dosyalarını kullanmadan önce doğruluk denetiminden geçirin:
+
+```bash
+python scripts/validate_data.py
+```
+
+Denetim veriyi değiştirmez; ölçer ve raporlar. Kontrol ettikleri: zorunlu
+sütunlar, koordinat aralığı ve hassasiyeti, analiz alanı dışındaki kayıtlar,
+boş isim ve kategori alanları, birebir ve yakın tekrarlar, dosya kodlaması.
+
+Bulgular üç düzeyde raporlanır. `error` veriyi kullanılamaz kılar, `warning`
+sonucu bozabilir, `info` yalnızca kayıt amaçlıdır.
+
+```bash
+python scripts/validate_data.py --dir yol/         # belirli bir dizin
+python scripts/validate_data.py --json rapor.json  # makine okunur çıktı
+python scripts/validate_data.py --strict           # hata varsa 1 döndür
+```
+
+Eşik değerleri `config/paths.yml` içindeki `validation` bölümünden okunur.
+
+Birebir tekrar ile yakın tekrar ayrı raporlanır, çünkü yorumları farklıdır:
+aynı zincirin iki şubesi meşru olabilir, aynı okulun iki kaydı değildir. İsim
+sütunu bulunmayan dosyalarda isim karşılaştırılamadığı için bunun yerine
+yakın konum yoğunluğu ölçülür.
+
 ## Testler
 
 ```bash
 pytest
-ruff check src tests
-ruff format --check src tests
+ruff check src tests scripts
+ruff format --check src tests scripts
 ```
 
 Testler sentetik veri kullanır; ağ erişimi veya iş ortağı verisi gerektirmez.
@@ -140,6 +168,7 @@ src/urbangeoai/     Kütüphane kodu
   grid.py           H3 ızgarası ve kara maskesi
   scoring.py        Mesafeye göre azalan skorlar
   indices.py        Bileşik indeksler ve bantlama
+  validation.py     Veri doğruluk denetimi
 notebooks/          Keşif ve analiz defterleri
 scripts/            Komut satırı araçları
 tests/              Birim testleri ve sentetik veri
