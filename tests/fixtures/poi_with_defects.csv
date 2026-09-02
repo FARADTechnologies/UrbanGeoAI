@@ -1,0 +1,9 @@
+id,name,type,lat,long
+1,Örnek Məktəb A,məktəb,40.377100,49.849200
+2,Örnek Məktəb B,məktəb,40.381500,49.855300
+3,Örnek Məktəb B,məktəb,40.381520,49.855310
+4,Örnek Bağça C,uşaq bağçası,40.3745,49.8501
+5,Örnek Bağça D,uşaq bağçası,40.390200,49.860400
+6,,uşaq bağçası,40.392100,49.862700
+7,Sınır Xarici Obyekt,məktəb,41.700000,46.350000
+8,Örnek Məktəb E,,40.370400,49.840900

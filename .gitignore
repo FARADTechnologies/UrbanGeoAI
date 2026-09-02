@@ -1,0 +1,107 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Veri
+#
+# Ham POI kümeleri iş ortağına aittir ve depoya girmez. Referans veriler
+# (idari sınırlar, OpenStreetMap çıktıları) kendi kaynaklarından indirilir;
+# lisans koşulları nedeniyle yeniden dağıtılmaz. Yalnızca sentetik örnek
+# veri sürümlenir.
+# ─────────────────────────────────────────────────────────────────────────────
+data/raw/*
+!data/raw/.gitkeep
+data/reference/*
+!data/reference/.gitkeep
+data/interim/
+data/processed/
+
+# Üretilen çıktılar
+out/
+out_*/
+outputs/
+*.parquet
+*.feather
+reports/generated/
+
+# Büyük tablolar. Örnek veri kümeleri data/sample/ altında ve boyut sınırlıdır.
+*.csv
+!data/sample/**/*.csv
+!tests/fixtures/**/*.csv
+
+# Önbellek (ağdan indirilen referanslar)
+cache/
+.cache/
+
+# Model çıktıları
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.onnx
+checkpoints/
+mlruns/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Gizli bilgi
+# ─────────────────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+config/paths.yml
+config/*.local.yml
+*.pem
+*.key
+credentials*.json
+secrets*
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Python
+# ─────────────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+.venv/
+venv/
+env/
+.python-version
+
+# Test ve tip kontrolü
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+
+# Notebook
+.ipynb_checkpoints/
+notebooks/**/out/
+*.nbconvert.ipynb
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Editör ve işletim sistemi
+# ─────────────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Yerel çalışma dosyaları
+#
+# İç değerlendirme notları, ekip görüşmelerine hazırlanan belgeler ve kişisel
+# çalışma dosyaları depoda tutulmaz. Bunların yayına uygun karşılıkları
+# docs/ altında bulunur.
+# ─────────────────────────────────────────────────────────────────────────────
+OKUBENI.md
+suallar.html
+accessibility_audit.html
+accessibility_pipeline/
+scratch/
+tmp/
