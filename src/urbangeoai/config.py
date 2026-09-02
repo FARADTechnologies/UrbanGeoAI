@@ -64,6 +64,7 @@ class Settings:
     bbox: tuple[float, float, float, float]
     h3_resolution: int
     validation: dict[str, Any] = field(default_factory=dict)
+    metro: dict[str, Any] = field(default_factory=dict)
     overpass_mirrors: tuple[str, ...] = ()
 
 
@@ -130,6 +131,7 @@ def load(path: Path | None = None) -> Settings:
         bbox=(float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])),
         h3_resolution=int(grid.get("h3_resolution", 10)),
         validation=raw.get("validation", {}) or {},
+        metro=raw.get("metro", {}) or {},
         overpass_mirrors=tuple(raw.get("overpass", {}).get("mirrors", ())),
     )
 

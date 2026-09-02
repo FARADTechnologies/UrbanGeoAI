@@ -60,3 +60,29 @@ overpass:
     - https://overpass-api.de/api/interpreter
     - https://overpass.kumi.systems/api/interpreter
     - https://overpass.osm.ch/api/interpreter
+
+metro:
+  # İşletmede olmayan istasyonlar. OpenStreetMap inşa hâlindeki ve planlanan
+  # istasyonları da kaydediyor; bir konuma "metroya 200 m" demek o metro açık
+  # değilse yanlış olur.
+  #
+  # Liste bilerek boş bırakılmıştır: hangi istasyonun işletmede olmadığı
+  # doğrulanması gereken bir olgudur, varsayılmaz. Denetim çıktısındaki
+  # aktarma kompleksi kararları gözden geçirilip aday istasyonlar buraya
+  # yazılmalıdır.
+  not_operational: []
+
+  # Aktarma kompleksleri tek erişim noktası sayılsın mı?
+  # Yolcu için tek yapıdır; iki kez saymak o noktanın ulaşım puanını şişirir.
+  #
+  # UYARI: bu kural yalnızca mesafeye bakar. Birbirine yakın iki kaydı
+  # "aktarma kompleksi" sayar, ama yakınlığın başka bir sebebi de olabilir:
+  # yanlış etiketlenmiş veya henüz açılmamış bir istasyon. Denetim kaydındaki
+  # her aktarma kararı insan tarafından doğrulanmalıdır.
+  merge_interchanges: true
+
+  # Aynı isimli iki kaydın tekrar sayılacağı azami mesafe (metre).
+  duplicate_radius_m: 200
+
+  # Farklı isimli iki istasyonun aktarma kompleksi sayılacağı mesafe (metre).
+  interchange_radius_m: 150
