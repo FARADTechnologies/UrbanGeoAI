@@ -148,6 +148,29 @@ aynı zincirin iki şubesi meşru olabilir, aynı okulun iki kaydı değildir. �
 sütunu bulunmayan dosyalarda isim karşılaştırılamadığı için bunun yerine
 yakın konum yoğunluğu ölçülür.
 
+## Metro verisi
+
+Metro istasyonları yerel dosyalardan değil OpenStreetMap'ten gelir. Ham sorgu
+istasyon olmayan düğümler de döndürdüğü için denetimden geçirilir:
+
+```bash
+python scripts/build_metro.py
+python scripts/build_metro.py --refresh     # önbelleği yok say
+python scripts/build_metro.py --no-merge    # aktarma komplekslerini ayrı say
+```
+
+Dört durum ayrıştırılır: birebir tekrar, servis noktası (depo, makas),
+işletmede olmayan istasyon ve aktarma kompleksi. Her ham düğüm için karar ve
+gerekçe `metro_audit.csv` dosyasına yazılır; hiçbir düğüm sessizce kaybolmaz.
+
+Son iki durum ürün kararıdır ve `config/paths.yml` içindeki `metro`
+bölümünden değiştirilebilir.
+
+**Aktarma kararları gözden geçirilmelidir.** Kural yalnızca mesafeye bakar;
+birbirine yakın iki kaydı aktarma kompleksi sayar, ama yakınlığın başka bir
+sebebi de olabilir: yanlış etiketlenmiş veya henüz açılmamış bir istasyon.
+Denetim kaydı bu ayrımı yapamaz, insan yapar.
+
 ## Testler
 
 ```bash
@@ -169,6 +192,7 @@ src/urbangeoai/     Kütüphane kodu
   scoring.py        Mesafeye göre azalan skorlar
   indices.py        Bileşik indeksler ve bantlama
   validation.py     Veri doğruluk denetimi
+  metro.py          Metro istasyonu denetimi ve tekilleştirme
 notebooks/          Keşif ve analiz defterleri
 scripts/            Komut satırı araçları
 tests/              Birim testleri ve sentetik veri
@@ -198,7 +222,6 @@ kümesi üretir. Sürümler arası karşılaştırma yapılacaksa maske sabit tu
 ## Yol haritası
 
 - POI veri kümeleri için sistematik doğrulama denetimi
-- OpenStreetMap metro verisinin tekilleştirilmesi
 - Kategori kapsamının dış kaynaklarla karşılaştırılması
 - Bant yönteminin alternatiflerinin değerlendirilmesi
 - Temel bileşen analizi metodolojisinin belgelenmesi

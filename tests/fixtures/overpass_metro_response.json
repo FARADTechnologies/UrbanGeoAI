@@ -1,0 +1,662 @@
+{
+ "version": 0.6,
+ "generator": "Overpass API 0.7.62.11 87bfad18",
+ "osm3s": {
+  "timestamp_osm_base": "2026-09-02T20:04:36Z",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+ },
+ "elements": [
+  {
+   "type": "node",
+   "id": 670199298,
+   "lat": 40.3832514,
+   "lon": 49.8721454,
+   "tags": {
+    "name": "Şah İsmayıl Xətai",
+    "name:en": "Shah Ismail Khatai",
+    "name:fa": "شاه اسماعیل ختایی",
+    "name:ru": "Шах Исмаил Хатаи",
+    "operator": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "short_name": "Xətai",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3025592",
+    "wikimedia_commons": "Category:Şah İsmail Xətai (Baku Metro)",
+    "wikipedia": "az:Şah İsmayıl Xətai metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 670216816,
+   "lat": 40.3793192,
+   "lon": 49.8300187,
+   "tags": {
+    "colour": "green",
+    "name": "Nizami",
+    "name:fa": "نظامی",
+    "name:ru": "Низами",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "1976-12-31",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3025411",
+    "wikimedia_commons": "Category:Nizami (Baku Metro)",
+    "wikipedia": "az:Nizami metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 670217100,
+   "lat": 40.3751519,
+   "lon": 49.8154836,
+   "tags": {
+    "name": "Elmlər Akademiyası",
+    "name:az": "Metro elmlər",
+    "name:en": "Elmler Akademiyasi",
+    "name:fa": "فرهنگستان علوم",
+    "name:ru": "Элмляр Академиясы",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "1985-12-31",
+    "station": "subway",
+    "subway": "yes",
+    "wheelchair": "yes",
+    "wikidata": "Q3025421",
+    "wikimedia_commons": "Category:Elmlər Akademiyası (Baku Metro)",
+    "wikipedia": "az:Elmlər Akademiyası metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 670217274,
+   "lat": 40.3890935,
+   "lon": 49.8023575,
+   "tags": {
+    "name": "İnşaatçılar",
+    "name:en": "Inshaatchilar",
+    "name:fa": "انشاتچیلار",
+    "name:ru": "Иншаатчылар",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "1985-12-31",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3025436",
+    "wikimedia_commons": "Category:İnşaatçılar (Baku Metro)",
+    "wikipedia": "az:İnşaatçılar metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 670217698,
+   "lat": 40.4246452,
+   "lon": 49.8262798,
+   "tags": {
+    "name": "Nəsimi",
+    "name:en": "Nasimi",
+    "name:fa": "نسیمی",
+    "name:ru": "Насими",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "2008-10-09",
+    "station": "subway",
+    "subway": "yes",
+    "wheelchair": "limited",
+    "wikidata": "Q3025513",
+    "wikimedia_commons": "Category:Nəsimi (Baku Metro)",
+    "wikipedia": "az:Nəsimi metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 670220144,
+   "lat": 40.4141403,
+   "lon": 49.8787959,
+   "tags": {
+    "name": "Bakmil",
+    "name:az": "Bakmil",
+    "name:fa": "باکمیل",
+    "name:ru": "Бакмил",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "1979-12-31",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3025343",
+    "wikimedia_commons": "Category:Bakmil (Baku Metro)",
+    "wikipedia": "az:Bakmil metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 670220312,
+   "lat": 40.4208641,
+   "lon": 49.9180944,
+   "tags": {
+    "name": "Koroğlu",
+    "name:en": "Koroglu",
+    "name:fa": "کوراوغلو",
+    "name:ru": "Короглу",
+    "network": "Bakı Metropoliteni",
+    "old_name": "Məşədi Əzizbəyov",
+    "public_transport": "station",
+    "railway": "station",
+    "start_date": "1972-11-06",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3024716",
+    "wikimedia_commons": "Category:Koroğlu (Baku Metro)",
+    "wikipedia": "az:Koroğlu metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 670220397,
+   "lat": 40.4176118,
+   "lon": 49.9339594,
+   "tags": {
+    "alt_name:ru": "Кара Караев",
+    "name": "Qara Qarayev",
+    "name:en": "Gara Garayev",
+    "name:fa": "قرا قرایف",
+    "name:ru": "Гара Гараев",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "1972-11-06",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3024692",
+    "wikipedia": "az:Qara Qarayev metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 670220410,
+   "lat": 40.411155,
+   "lon": 49.9425681,
+   "tags": {
+    "name": "Neftçilər",
+    "name:az-cyr": "Нефтчиләр",
+    "name:en": "Neftchilar",
+    "name:fa": "نفتچیلر",
+    "name:ru": "Нефтчиляр",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "1972-11-06",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q2008806",
+    "wikimedia_commons": "Category:Neftchilar (Baku Metro)",
+    "wikipedia": "az:Neftçilər metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 670220733,
+   "lat": 40.3968851,
+   "lon": 49.9529864,
+   "tags": {
+    "alt_name:ru": "Дружбы народов",
+    "name": "Xalqlar Dostluğu",
+    "name:en": "Halglar Dostlugu",
+    "name:fa": "خالقلار دوستلوغو",
+    "name:ru": "Халглар Достлугу",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "1989-04-28",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3024561",
+    "wikimedia_commons": "Category:Xalqlar Dostluğu (Baku Metro)",
+    "wikipedia": "az:Xalqlar Dostluğu metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 670220979,
+   "lat": 40.3855583,
+   "lon": 49.9539452,
+   "tags": {
+    "name": "Əhmədli",
+    "name:en": "Ahmadli",
+    "name:fa": "احمدلی",
+    "name:ru": "Ахмедлы",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "1989-04-28",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3024552",
+    "wikimedia_commons": "Category:Əhmədli (Baku Metro)",
+    "wikipedia": "az:Əhmədli metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 670220993,
+   "lat": 40.3730376,
+   "lon": 49.9535736,
+   "tags": {
+    "name": "Həzi Aslanov",
+    "name:en": "Hazi Aslanov",
+    "name:fa": "هزی اصلانوف",
+    "name:ru": "Ази Асланов",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "2002-12-10",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q2020145",
+    "wikimedia_commons": "Category:Həzi Aslanov (Baku Metro)",
+    "wikipedia": "az:Həzi Aslanov metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1148914625,
+   "lat": 40.4259622,
+   "lon": 49.8429264,
+   "tags": {
+    "name": "Azadlıq prospekti",
+    "name:fa": "خیابان آزادلیق",
+    "name:ru": "Азадлыг проспекти",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "2009-12-30",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3025522",
+    "wikimedia_commons": "Category:Azadlıq prospekti (Baku Metro)",
+    "wikipedia": "az:Azadlıq Prospekti metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1924834867,
+   "lat": 40.4254022,
+   "lon": 49.8617881,
+   "tags": {
+    "name": "Dərnəgül",
+    "name:en": "Darnagul",
+    "name:fa": "دارناگول",
+    "name:ru": "Дарнагюль",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "2011-06-29",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3025554",
+    "wikimedia_commons": "Category:Dərnəgül (Baku Metro)",
+    "wikipedia": "az:Dərnəgül metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1930089762,
+   "lat": 40.404139,
+   "lon": 49.807702,
+   "tags": {
+    "name": "20 Yanvar st.",
+    "name:az": "20 Yanvar st.",
+    "name:fa": "۲۰ ژانویه",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "1985-12-31",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3025472",
+    "wikimedia_commons": "Category:20 Yanvar (Baku Metro)",
+    "wikipedia": "az:20 Yanvar metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 2295524457,
+   "lat": 40.379652,
+   "lon": 49.8489498,
+   "tags": {
+    "name": "Cəfər Cabbarlı",
+    "name:en": "Jafar Jabbarly",
+    "name:fa": "جعفر جبارلی",
+    "network": "Bakı Metropoliteni",
+    "operator": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3025580",
+    "wikipedia": "az:Cəfər Cabbarlı metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 3896778915,
+   "lat": 40.414963,
+   "lon": 49.8914348,
+   "tags": {
+    "name": "Ulduz",
+    "name:en": "Ulduz",
+    "name:fa": "اولدوز",
+    "name:ru": "Улдуз",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "1970-05-05",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q1109176",
+    "wikimedia_commons": "Category:Ulduz (Baku Metro)",
+    "wikipedia": "az:Ulduz metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4161594118,
+   "lat": 40.4106807,
+   "lon": 49.8139435,
+   "tags": {
+    "name": "Memar Əcəmi",
+    "name:en": "Memar Ajami",
+    "name:ru": "Мемар Аджеми",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "stop_position",
+    "railway": "station",
+    "start_date": "1985-12-31",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3025490",
+    "wikimedia_commons": "Category:Memar Əcəmi (Baku Metro)",
+    "wikipedia": "az:Memar Əcəmi metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4168101319,
+   "lat": 40.421508,
+   "lon": 49.7952155,
+   "tags": {
+    "name": "Avtovağzal",
+    "name:fa": "ایستگاه اتوبوس",
+    "public_transport": "station",
+    "railway": "station",
+    "start_date": "2016-04-19",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q12836192",
+    "wikimedia_commons": "Category:Avtovağzal (Baku Metro)",
+    "wikipedia": "az:Avtovağzal metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4802437812,
+   "lat": 40.3772671,
+   "lon": 49.9104706,
+   "tags": {
+    "construction": "station",
+    "internet_access": "no",
+    "name": "Y15",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "subway",
+    "subway": "yes",
+    "type": "public_transport"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4802441983,
+   "lat": 40.3724161,
+   "lon": 49.9520678,
+   "tags": {
+    "construction": "station",
+    "name": "Məhəmməd Hadi",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "subway",
+    "subway": "yes",
+    "type": "public_transport",
+    "wikidata": "Q25394155",
+    "wikipedia": "az:Həzi Aslanov-2 metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5188836356,
+   "lat": 40.3798619,
+   "lon": 49.8486359,
+   "tags": {
+    "addr:city": "Bakı",
+    "addr:street": "28 May Meydanı",
+    "name": "28 May",
+    "name:az": "28 May",
+    "name:fa": "۲۸ مه",
+    "network": "Bakı Metropoliteni",
+    "operator": "Bakı Metropoliteni",
+    "public_transport": "station",
+    "railway": "station",
+    "start_date": "1967-11-06",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3025367",
+    "wikimedia_commons": "Category:28 May (Baku Metro)",
+    "wikipedia": "az:28 May metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5995369231,
+   "lat": 40.3788687,
+   "lon": 49.8899873,
+   "tags": {
+    "construction": "station",
+    "name": "Y14",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "subway",
+    "subway": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5996343785,
+   "lat": 40.3937251,
+   "lon": 49.8282314,
+   "tags": {
+    "construction": "yes",
+    "internet_access": "no",
+    "internet_access:fee": "no",
+    "name": "B-4",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "subway",
+    "subway": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6010348738,
+   "lat": 40.4018671,
+   "lon": 49.8205094,
+   "tags": {
+    "name": "8 Noyabr",
+    "name:fa": "۸ نوامبر",
+    "network": "Bakı metropoliteni",
+    "public_transport": "station",
+    "railway": "station",
+    "start_date": "2021-05-29",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q16413570",
+    "wikimedia_commons": "Category:8 Noyabr (Baku Metro)",
+    "wikipedia": "az:8 Noyabr metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7279336593,
+   "lat": 40.4104823,
+   "lon": 49.8124456,
+   "tags": {
+    "name": "Memar Əcəmi",
+    "name:en": "Memar Ajami",
+    "name:fa": "معمار عجمی",
+    "name:ru": "Мемар Аджеми",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "station",
+    "railway": "station",
+    "start_date": "2016-04-19",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q3025490",
+    "wikimedia_commons": "Category:Memar Əcəmi (Baku Metro)",
+    "wikipedia": "az:Memar Əcəmi metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 8809282576,
+   "lat": 40.4230824,
+   "lon": 49.7796111,
+   "tags": {
+    "name": "Xocəsən Depo Metro",
+    "name:en": "Khojasan",
+    "network": "Bakı metropoliteni",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q114472656",
+    "wikimedia_commons": "Category:Xocəsən (Baku Metro)",
+    "wikipedia": "az:Xocəsən metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11622641263,
+   "lat": 40.4028217,
+   "lon": 49.8706376,
+   "tags": {
+    "name": "Nəriman Nərimanov",
+    "name:en": "Nariman Narimanov",
+    "name:fa": "نریمان نریمانوف",
+    "name:ru": "Нариман Нариманов",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "station",
+    "railway": "station",
+    "start_date": "1967-11-06",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q1125310",
+    "wikimedia_commons": "Category:Nəriman Nərimanov (Baku Metro)",
+    "wikipedia": "az:Nəriman Nərimanov metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11622641264,
+   "lat": 40.3998793,
+   "lon": 49.850956,
+   "tags": {
+    "addr:street": "Əhmədbəy Ağaoğlu küçəsi",
+    "name": "Gənclik",
+    "name:en": "Ganjlik",
+    "name:fa": "گنجلیک",
+    "network": "Bakı Metropoliteni",
+    "opening_hours": "Mo-Su 10:00-00:00",
+    "public_transport": "station",
+    "railway": "station",
+    "start_date": "1967-11-06",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q616786",
+    "wikimedia_commons": "Category:Gənclik (Baku Metro)",
+    "wikipedia": "az:Gənclik metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11622641266,
+   "lat": 40.3717258,
+   "lon": 49.8445724,
+   "tags": {
+    "name": "Sahil",
+    "name:az": "Sahil",
+    "name:fa": "سهیل",
+    "network": "Bakı Metropoliteni",
+    "old_name": "26 Бакинских Комиссаров",
+    "old_name:az": "26 Bakı komissarı",
+    "old_name:az-cyr": "26 Бакы комиссары",
+    "old_name:ru": "26 Бакинских Комиссаров",
+    "public_transport": "station",
+    "railway": "station",
+    "start_date": "1967-11-06",
+    "station": "subway",
+    "subway": "yes"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11622641267,
+   "lat": 40.3659588,
+   "lon": 49.8316472,
+   "tags": {
+    "name": "İçərişəhər",
+    "name:az": "İçərişəhər",
+    "name:en": "Icherisheher",
+    "name:fa": "شهر داخلی",
+    "name:ru": "Ичеришехер",
+    "network": "Bakı Metropoliteni",
+    "network:wikidata": "Q213271",
+    "old_name": "Baki Soveti",
+    "operator": "Bakı Metropoliteni",
+    "operator:wikidata": "Q213271",
+    "public_transport": "station",
+    "railway": "station",
+    "start_date": "1967-11-06",
+    "station": "subway",
+    "subway": "yes",
+    "wheelchair": "no",
+    "wikidata": "Q2427287",
+    "wikimedia_commons": "Category:Icheri Sheher (Baku Metro)",
+    "wikipedia": "az:İçərişəhər metrostansiyası"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13857117060,
+   "lat": 40.4335133,
+   "lon": 49.8574751,
+   "tags": {
+    "construction": "yes",
+    "internet_access": "no",
+    "internet_access:fee": "no",
+    "name": "Dərnəgül deposu",
+    "network": "Bakı Metropoliteni",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "subway",
+    "subway": "yes"
+   }
+  }
+ ]
+}
