@@ -224,7 +224,12 @@ kümesi üretir. Sürümler arası karşılaştırma yapılacaksa maske sabit tu
 - POI veri kümeleri için sistematik doğrulama denetimi
 - Kategori kapsamının dış kaynaklarla karşılaştırılması
 - Bant yönteminin alternatiflerinin değerlendirilmesi
-- Temel bileşen analizi metodolojisinin belgelenmesi
+
+## Belgeler
+
+- [`docs/pca-metodolojisi.md`](docs/pca-metodolojisi.md) — temel bileşen
+  analizinin matematiksel temeli, projede verilen kararlar ve gerekçeleri.
+  Belgedeki bütün sayılar `python scripts/pca_demo.py` ile doğrulanabilir.
 
 ## Lisans
 
