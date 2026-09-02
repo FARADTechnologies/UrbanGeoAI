@@ -51,7 +51,9 @@ PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
     ),
     (
         "Bağlantı dizesi",
-        re.compile(r"(?i)\b(postgres(ql)?|mysql|mongodb(\+srv)?|redis)://[^\s\"'<>]*:[^\s\"'<>@]+@"),
+        re.compile(
+            r"(?i)\b(postgres(ql)?|mysql|mongodb(\+srv)?|redis)://[^\s\"'<>]*:[^\s\"'<>@]+@"
+        ),
         "Parola içeren veritabanı adresi",
     ),
     (
@@ -81,15 +83,32 @@ ALLOW = re.compile(
 )
 
 TEXT_SUFFIXES = {
-    ".py", ".ipynb", ".md", ".yml", ".yaml", ".toml", ".cfg", ".ini",
-    ".txt", ".json", ".csv", ".sh", ".html", ".js", ".ts", ".sql", "",
+    ".py",
+    ".ipynb",
+    ".md",
+    ".yml",
+    ".yaml",
+    ".toml",
+    ".cfg",
+    ".ini",
+    ".txt",
+    ".json",
+    ".csv",
+    ".sh",
+    ".html",
+    ".js",
+    ".ts",
+    ".sql",
+    "",
 }
 
 
 def staged_files() -> list[str]:
     out = subprocess.run(
         ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return [f for f in out.stdout.splitlines() if f.strip()]
 
@@ -125,8 +144,9 @@ def scan_file(path: Path) -> list[tuple[int, str, str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--tracked", action="store_true",
-                        help="Staged yerine takip edilen bütün dosyaları tara")
+    parser.add_argument(
+        "--tracked", action="store_true", help="Staged yerine takip edilen bütün dosyaları tara"
+    )
     args = parser.parse_args()
 
     files = tracked_files() if args.tracked else staged_files()
