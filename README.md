@@ -160,7 +160,9 @@ python scripts/build_metro.py --no-merge    # aktarma komplekslerini ayrı say
 ```
 
 Dört durum ayrıştırılır: birebir tekrar, servis noktası (depo, makas),
-işletmede olmayan istasyon ve aktarma kompleksi. Her ham düğüm için karar ve
+işletmede olmayan istasyon ve aktarma kompleksi. İşletme durumu tahmin
+edilmez: OpenStreetMap açılmamış istasyonları `construction` etiketiyle
+işaretliyor ve karar bu etiketten çıkıyor. Her ham düğüm için karar ve
 gerekçe `metro_audit.csv` dosyasına yazılır; hiçbir düğüm sessizce kaybolmaz.
 
 Son iki durum ürün kararıdır ve `config/paths.yml` içindeki `metro`
