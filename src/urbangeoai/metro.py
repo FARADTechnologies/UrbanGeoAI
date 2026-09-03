@@ -11,7 +11,9 @@ yüzden erişilebilirlik açısından istasyon değildir.
 
 **İşletmede olmayan istasyon.** İnşa hâlindeki veya planlanan istasyonlar
 OpenStreetMap'te bulunur. Bir konuma "metroya 200 m" demek, o metro açık
-değilse yanlıştır.
+değilse yanlıştır. Bu durum tahmin edilmez: düğümün ``construction`` etiketi
+varsa istasyon henüz hizmete girmemiştir. Etiket yoksa ve elle bir liste
+verilmişse o liste de dikkate alınır.
 
 **Aktarma kompleksi.** İki ayrı istasyon fiziksel olarak tek bir yapı içinde.
 Yolcu için tek erişim noktasıdır; iki kez saymak o noktanın ulaşım puanını
@@ -141,6 +143,17 @@ def is_service_node(name: str) -> bool:
     return bool(pd.Series([name.strip()]).str.match(TECHNICAL_PATTERN, case=False).iloc[0])
 
 
+def has_construction_tag(node: dict) -> str | None:
+    """Düğüm inşa hâlindeyse etiketin değerini döndürür.
+
+    OpenStreetMap açılmamış istasyonları ``construction`` etiketiyle
+    işaretliyor (``yes`` veya ``station``). Bu doğrudan veriden gelen bir
+    kanıttır; isim kalıbına bakarak tahmin etmekten güvenilirdir.
+    """
+    value = (node.get("tags") or {}).get("construction")
+    return str(value) if value else None
+
+
 def deduplicate(
     records: list[dict],
     not_operational: tuple[str, ...] = (),
@@ -152,8 +165,10 @@ def deduplicate(
 
     Args:
         records: ``osm_id``, ``name``, ``lat``, ``lon`` alanlı ham düğümler.
-        not_operational: İşletmede olmayan istasyon adları. Eşleşme büyük
-            küçük harf ve baştaki sondaki boşluktan bağımsızdır.
+        not_operational: Elle verilen işletme dışı istasyon adları. Yalnızca
+            ``construction`` etiketi taşımayan ama yine de kapalı olduğu
+            bilinen istasyonlar için gerekir. Eşleşme büyük küçük harf ve
+            baştaki sondaki boşluktan bağımsızdır.
         merge_interchanges: True ise birbirine yakın farklı isimli istasyonlar
             tek erişim noktası sayılır ve ilki tutulur.
         duplicate_radius_m: Aynı isimli iki kaydın tekrar sayılacağı mesafe.
@@ -164,8 +179,10 @@ def deduplicate(
         Her düğüm için karar ve gerekçe taşıyan rapor.
 
     Not:
-        Karar sırası önemli. Servis ve işletme dışı düğümler önce elenir,
-        böylece bir depo yakınındaki gerçek istasyonu aktarma sanmayız.
+        Karar sırası önemli. Önce inşa hâlindeki düğümler, sonra servis
+        noktaları, sonra elle verilen liste elenir; aktarma kontrolü en sona
+        kalır. Böylece kapalı bir istasyonun yanındaki gerçek istasyonu
+        aktarma kompleksi sanmayız.
     """
     normalised = {normalise_name(n) for n in not_operational}
     report = MetroReport()
@@ -183,6 +200,20 @@ def deduplicate(
                     lon=node["lon"],
                     decision=Decision.UNNAMED,
                     reason="düğümün adı yok, istasyon olarak doğrulanamıyor",
+                )
+            )
+            continue
+
+        construction = has_construction_tag(node)
+        if construction:
+            report.records.append(
+                NodeRecord(
+                    osm_id=node.get("osm_id", -1),
+                    name=name,
+                    lat=node["lat"],
+                    lon=node["lon"],
+                    decision=Decision.NOT_OPERATIONAL,
+                    reason=f"OpenStreetMap 'construction={construction}' etiketi taşıyor",
                 )
             )
             continue
@@ -208,7 +239,7 @@ def deduplicate(
                     lat=node["lat"],
                     lon=node["lon"],
                     decision=Decision.NOT_OPERATIONAL,
-                    reason="istasyon işletmede değil",
+                    reason="konfigürasyondaki işletme dışı listesinde",
                 )
             )
             continue
