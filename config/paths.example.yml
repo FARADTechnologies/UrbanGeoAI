@@ -66,10 +66,13 @@ metro:
   # istasyonları da kaydediyor; bir konuma "metroya 200 m" demek o metro açık
   # değilse yanlış olur.
   #
-  # Liste bilerek boş bırakılmıştır: hangi istasyonun işletmede olmadığı
-  # doğrulanması gereken bir olgudur, varsayılmaz. Denetim çıktısındaki
-  # aktarma kompleksi kararları gözden geçirilip aday istasyonlar buraya
-  # yazılmalıdır.
+  # Bu liste yalnızca YEDEKTİR. Asıl kural veriden okunuyor: OpenStreetMap
+  # açılmamış istasyonları 'construction' etiketiyle işaretliyor ve kod bu
+  # etikete bakıyor. Liste, etiketi olmayan ama kapalı olduğu bilinen bir
+  # istasyon çıkarsa kullanılır.
+  #
+  # Dikkat: buraya yazılan her isim doğrulanmış olmalı. Yanlış bir kayıt
+  # çalışan bir istasyonu sessizce siler.
   not_operational: []
 
   # Aktarma kompleksleri tek erişim noktası sayılsın mı?

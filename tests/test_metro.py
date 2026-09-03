@@ -46,9 +46,15 @@ def test_real_stations_are_not_service_nodes(name):
 
 
 def test_service_nodes_are_removed_from_the_real_response(raw_records):
+    """İsim kalıbı yalnızca etiketsiz düğümler için devrede.
+
+    Dərnəgül deposu, Y14, Y15 ve B-4 'construction' etiketi taşıdığı için
+    daha üstteki kural onları zaten işletme dışı sayıyor. Xocəsən Depo'da
+    etiket yok; onu isim kalıbı yakalıyor.
+    """
     report = metro.deduplicate(raw_records)
-    removed = _names(report, Decision.SERVICE)
-    assert {"Xocəsən Depo Metro", "Dərnəgül deposu", "Y14", "Y15"} <= removed
+    assert "Xocəsən Depo Metro" in _names(report, Decision.SERVICE)
+    assert "Xocəsən Depo Metro" not in {r.name for r in report.kept}
 
 
 # ── Birebir tekrar ──────────────────────────────────────────────────────────
@@ -134,9 +140,19 @@ def test_duplicate_detection_survives_case_difference():
     assert len(report.kept) == 1
 
 
-def test_empty_not_operational_list_removes_nothing(raw_records):
+def test_empty_manual_list_still_removes_construction_tagged_nodes(raw_records):
+    """Elle liste boş olsa da etiketli düğümler eleniyor.
+
+    Önceki davranış listeye bağlıydı; artık karar verinin kendisinden çıkıyor.
+    """
     report = metro.deduplicate(raw_records, not_operational=())
-    assert _names(report, Decision.NOT_OPERATIONAL) == set()
+    closed = _names(report, Decision.NOT_OPERATIONAL)
+    assert "Məhəmməd Hadi" in closed
+    assert all(
+        "construction=" in r.reason
+        for r in report.records
+        if r.decision is Decision.NOT_OPERATIONAL
+    )
 
 
 # ── Aktarma kompleksi ───────────────────────────────────────────────────────
@@ -229,3 +245,57 @@ def test_result_is_deterministic(raw_records):
     first = metro.deduplicate(raw_records).frame()
     second = metro.deduplicate(raw_records).frame()
     assert first.equals(second)
+
+
+# ── construction etiketi ────────────────────────────────────────────────────
+
+
+def test_construction_tag_is_detected():
+    assert metro.has_construction_tag({"tags": {"construction": "station"}}) == "station"
+    assert metro.has_construction_tag({"tags": {"construction": "yes"}}) == "yes"
+
+
+def test_node_without_construction_tag_returns_none():
+    assert metro.has_construction_tag({"tags": {"railway": "station"}}) is None
+    assert metro.has_construction_tag({}) is None
+
+
+def test_construction_nodes_are_marked_not_operational(raw_records):
+    """İşletme durumu tahmin edilmez, veriden okunur."""
+    report = metro.deduplicate(raw_records)
+    closed = _names(report, Decision.NOT_OPERATIONAL)
+    assert {"Məhəmməd Hadi", "Y14", "Y15", "B-4", "Dərnəgül deposu"} <= closed
+
+
+def test_construction_reason_cites_the_tag(raw_records):
+    """Gerekçe kanıta dayanmalı, kalıba değil."""
+    report = metro.deduplicate(raw_records)
+    hadi = next(r for r in report.records if r.name == "Məhəmməd Hadi")
+    assert hadi.decision is Decision.NOT_OPERATIONAL
+    assert "construction=station" in hadi.reason
+
+
+def test_operational_station_is_not_removed_by_construction_rule(raw_records):
+    """Nəsimi işletmede (start_date=2008-10-09); silinmemeli."""
+    report = metro.deduplicate(raw_records)
+    assert "Nəsimi" in {r.name for r in report.kept}
+
+
+def test_construction_check_runs_before_interchange_merge(raw_records):
+    """Kapalı istasyon, yanındaki gerçek istasyonla birleştirilmemeli.
+
+    Məhəmməd Hadi, Həzi Aslanov'a 145 m mesafede. Sıra yanlış olsaydı
+    'aktarma kompleksi' diye birleşir ve gerekçe yanlış olurdu.
+    """
+    report = metro.deduplicate(raw_records, merge_interchanges=True)
+    hadi = next(r for r in report.records if r.name == "Məhəmməd Hadi")
+    assert hadi.decision is Decision.NOT_OPERATIONAL
+    assert "Həzi Aslanov" in {r.name for r in report.kept}
+
+
+def test_manual_list_still_works_for_untagged_stations():
+    """Etiketi olmayan ama kapalı bilinen istasyonlar için elle liste."""
+    records = [{"osm_id": 1, "name": "Kapalı İstasyon", "lat": 40.4, "lon": 49.8, "tags": {}}]
+    report = metro.deduplicate(records, not_operational=("Kapalı İstasyon",))
+    assert report.kept == []
+    assert "konfigürasyondaki" in report.records[0].reason
