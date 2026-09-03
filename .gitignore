@@ -103,5 +103,10 @@ OKUBENI.md
 suallar.html
 accessibility_audit.html
 accessibility_pipeline/
+
+# Görselleştirme çıktıları. Konsol dosyası iş ortağının POI koordinatlarını
+# gömülü olarak taşıdığı için depoda tutulmaz; üreten betik depodadır.
+urbangeoai_konsol.html
+viz_data.json
 scratch/
 tmp/
