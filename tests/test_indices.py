@@ -137,3 +137,74 @@ def test_band_count_is_configurable(n_bands):
     index = _skewed_index(floor_share=0.2)
     floor, edges = indices.fit_bands(index, n_bands=n_bands)
     assert len(edges) <= n_bands - 1
+
+
+# ── taban dışındaki beraberlikler ───────────────────────────────────────────
+
+
+def _tied_middle(n: int = 1000) -> np.ndarray:
+    """Tabanda değil, ORTADA büyük bir beraberlik kütlesi olan dağılım.
+
+    Gerçek veride görüldü: bir kategori az sayıda ve merkezde toplanınca,
+    şehrin büyük bölümü tabanın hemen üstünde aynı değeri alıyor.
+    """
+    rng = np.random.default_rng(7)
+    return np.concatenate(
+        [
+            np.zeros(int(n * 0.05)),  # küçük taban
+            np.full(int(n * 0.45), 0.5),  # büyük orta yığılma
+            rng.exponential(1.0, n - int(n * 0.05) - int(n * 0.45)) + 1.0,
+        ]
+    )
+
+
+def test_top_band_is_reached_despite_a_tie_outside_the_floor():
+    """Önceki uygulama yalnızca tabandaki beraberliği ele alıyordu."""
+    index = _tied_middle()
+    floor, edges = indices.fit_bands(index)
+    bands = indices.apply_bands(index, floor, edges)
+    assert bands.max() == indices.N_BANDS
+    assert bands.min() == 1
+
+
+def test_tied_values_always_receive_the_same_band():
+    """Eşit erişilebilirliğe farklı puan verilemez."""
+    index = _tied_middle()
+    floor, edges = indices.fit_bands(index)
+    bands = indices.apply_bands(index, floor, edges)
+    tied = bands[index == 0.5]
+    assert len(np.unique(tied)) == 1
+
+
+def test_band_coverage_reports_empty_bands():
+    """Boş bant hata değil ama sessizce geçmemeli."""
+    index = _tied_middle()
+    floor, edges = indices.fit_bands(index)
+    cov = indices.band_coverage(indices.apply_bands(index, floor, edges))
+    assert set(cov) == set(range(1, indices.N_BANDS + 1))
+    assert sum(cov.values()) == len(index)
+
+
+def test_band_coverage_is_complete_for_well_spread_data():
+    index = _skewed_index(floor_share=0.2)
+    floor, edges = indices.fit_bands(index)
+    cov = indices.band_coverage(indices.apply_bands(index, floor, edges))
+    assert all(v > 0 for v in cov.values())
+
+
+def test_bands_stay_monotonic_with_ties():
+    """Daha yüksek indeks asla daha düşük bant almamalı."""
+    index = _tied_middle()
+    floor, edges = indices.fit_bands(index)
+    bands = indices.apply_bands(index, floor, edges)
+    order = np.argsort(index)
+    assert np.all(np.diff(bands[order]) >= 0)
+
+
+def test_two_distinct_values_still_span_the_scale():
+    """Uç durum: yalnızca iki farklı değer varsa uçlar yine 1 ve 10 olmalı."""
+    index = np.array([0.0] * 50 + [1.0] * 50)
+    floor, edges = indices.fit_bands(index)
+    bands = indices.apply_bands(index, floor, edges)
+    assert bands.min() == 1
+    assert bands.max() == indices.N_BANDS

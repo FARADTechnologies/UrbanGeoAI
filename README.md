@@ -32,12 +32,17 @@ işareti keyfîdir; kütüphane onu veriye göre seçer. Yükler negatif çıkar
 indeks tersine döner ve en erişilebilir hücre en düşük puanı alır. Bu hiçbir
 hata üretmeden gerçekleşir. Yüklerin toplamı negatifse bileşen çevrilir.
 
-**Taban kütlesi ayrı ele alınır.** Hücrelerin önemli bir bölümü çevresinde hiç
-hizmet bulunmadığı için aynı en düşük değeri taşır. Eşit değerler aynı dilime
-düşmek zorunda olduğundan yüzdelik dilimleme fazla dilimleri sessizce siler;
-on bant istenirken beş bant üretilebilir. Taban kütlesi doğrudan birinci banda
-verilir, kalan hücreler dokuz dilime bölünür. Böylece en yüksek bant gerçekten
-onuncu banttır.
+**Beraberlikler açıkça ele alınır.** Hücrelerin önemli bir bölümü çevresinde
+hiç hizmet bulunmadığı için aynı değeri taşır. Yüzdelik dilimleme bu durumda
+fazla dilimleri sessizce siler ve on bant istenirken beş bant üretebilir.
+
+İki kural birbiriyle çelişir: *eşit indeks eşit bal almalı* ve *on bandın hepsi
+dolmalı*. Bir değerin kütlesi onda birden büyükse ikisi birden mümkün değildir.
+Birinci kural korunur — aynı erişilebilirliğe farklı puan vermek savunulamaz.
+Uç noktalar her durumda garantilidir: en düşük değer 1, en yüksek değer 10
+alır. Aradaki bazı bantlar boş kalabilir; `band_coverage` bunu raporlar. Boş
+bant bir hata değil, altındaki değerde büyük bir yığılma olduğunu gösteren
+gerçek bir bilgidir.
 
 **Model dondurulur.** Ölçekleyici, bileşen yükleri ve bant sınırları her
 çalıştırmada yeniden öğrenilirse referans çerçevesi kayar: çevresinde hiçbir
