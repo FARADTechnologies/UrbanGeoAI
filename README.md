@@ -189,6 +189,22 @@ birbirine yakın iki kaydı aktarma kompleksi sayar, ama yakınlığın başka b
 sebebi de olabilir: yanlış etiketlenmiş veya henüz açılmamış bir istasyon.
 Denetim kaydı bu ayrımı yapamaz, insan yapar.
 
+## Sürüm karşılaştırma
+
+İki veri sürümünü ve iki yöntemi karşılaştırır:
+
+```bash
+python scripts/compare_versions.py
+python scripts/compare_versions.py --json out/comparison.json
+```
+
+İki etki ayrı ölçülür. **Veri etkisi**: aynı yöntem, iki veri sürümü. **Yöntem
+etkisi**: aynı veri, eski ve yeni yöntem. Ayrılmazlarsa bir puanın neden
+değiştiği anlaşılamaz.
+
+Karşılaştırma özgün analiz sınırını gerektirir; ızgara aynı olmazsa hücre
+bazında hizalama mümkün değildir.
+
 ## Testler
 
 ```bash
