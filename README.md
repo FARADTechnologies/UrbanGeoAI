@@ -78,7 +78,8 @@ Depo veri içermez. Üç kaynak vardır:
 | Kaynak | Nereden | Depoda |
 |---|---|---|
 | POI veri kümeleri | İş ortağı tarafından sağlanır | Hayır |
-| İdari sınırlar | İlk çalıştırmada indirilir | Hayır, lisans nedeniyle |
+| Analiz sınırı (`map_absheron.geojson`) | İş ortağı tarafından sağlanır | Hayır |
+| İdari sınırlar (yedek) | İlk çalıştırmada indirilir | Hayır, lisans nedeniyle |
 | OpenStreetMap sorguları | Overpass API, önbelleğe alınır | Hayır, lisans nedeniyle |
 | Sentetik örnek veri | Depoyla gelir | `data/sample/` |
 
@@ -219,7 +220,10 @@ bulunduğu ve hepsi merkeze yakınlıkla ilişkili olduğu için indeksler bağ�
 değildir.
 
 **Kara maskesi sonucu belirler.** Farklı bir sınır dosyası farklı bir hücre
-kümesi üretir. Sürümler arası karşılaştırma yapılacaksa maske sabit tutulmalıdır.
+kümesi üretir. Özgün maske (`map_absheron.geojson`) `data/reference/` altına
+yerleştirilmelidir; parmak izi kodda kayıtlı ve farklı bir dosya konursa uyarı
+verilir. Maske yoksa açık kaynaklı bir sınıra düşülür, ancak o farklı bir
+ızgara üretir ve önceki çıktıyla karşılaştırma geçersiz olur.
 
 ## Yol haritası
 
