@@ -10,6 +10,8 @@ yapılacaksa maskenin sabit tutulması gerekir.
 
 from __future__ import annotations
 
+import hashlib
+import sys
 from pathlib import Path
 
 import geopandas as gpd
@@ -23,6 +25,14 @@ GADM_FILE = "gadm41_AZE_1.json"
 
 #: GADM birinci seviye bölümlerinden Bakı'yı içeren bölgeyi seçer.
 REGION_PATTERN = "Baku|Absheron"
+
+#: İş ortağının sağladığı özgün analiz sınırı. Depoda bulunmaz; referans
+#: dizinine elle yerleştirilir. Mevcutsa GADM yerine bu kullanılır.
+PARTNER_MASK_FILE = "map_absheron.geojson"
+
+#: Doğrulanmış maskenin parmak izi. Farklı bir dosya konursa uyarı verilir,
+#: çünkü maske sonucu tek başına belirler ve sessizce değişmemelidir.
+PARTNER_MASK_SHA256 = "89f2f80264ff5ea43b730126711b37cd545f9c06192059364087ffd1c7c43fd3"
 
 
 def bbox_cells(bbox: tuple[float, float, float, float], resolution: int) -> pd.DataFrame:
@@ -54,15 +64,44 @@ def bbox_cells(bbox: tuple[float, float, float, float], resolution: int) -> pd.D
     )
 
 
-def load_boundary(reference_dir: Path, download: bool = True) -> gpd.GeoDataFrame:
-    """Kara maskesini yükler, gerekirse indirir.
+def mask_fingerprint(path: Path) -> str:
+    """Maske dosyasının sha256 parmak izi."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
-    Kaynak dosya lisansı nedeniyle depoda tutulmaz; ilk çalıştırmada indirilir.
+
+def load_boundary(reference_dir: Path, download: bool = True) -> gpd.GeoDataFrame:
+    """Kara maskesini yükler.
+
+    İş ortağının sağladığı özgün maske referans dizininde bulunuyorsa o
+    kullanılır; sonuç önceki üretim çıktısıyla birebir eşleşir. Bulunmuyorsa
+    açık kaynaklı bir sınıra düşülür. İkisi aynı ızgarayı üretmez, bu yüzden
+    hangisinin kullanıldığı bildirilir.
+
+    Maskenin dosyaları depoda tutulmaz; referans veriler için geçerli kural
+    burada da geçerlidir.
 
     Raises:
-        FileNotFoundError: Dosya yoksa ve indirme kapalıysa.
+        FileNotFoundError: Yedek sınır da yoksa ve indirme kapalıysa.
     """
     reference_dir.mkdir(parents=True, exist_ok=True)
+
+    partner = reference_dir / PARTNER_MASK_FILE
+    if partner.exists():
+        digest = mask_fingerprint(partner)
+        if digest != PARTNER_MASK_SHA256:
+            print(
+                f"  [sınır] UYARI: {PARTNER_MASK_FILE} beklenen parmak izini taşımıyor.\n"
+                f"          beklenen {PARTNER_MASK_SHA256[:16]}…, bulunan {digest[:16]}…\n"
+                f"          Izgara önceki çıktıyla eşleşmeyebilir.",
+                file=sys.stderr,
+            )
+        return repair(gpd.read_file(partner))
+
+    print(
+        f"  [sınır] {PARTNER_MASK_FILE} bulunamadı, açık kaynaklı sınıra düşülüyor.\n"
+        f"          Izgara önceki üretim çıktısıyla birebir eşleşmeyecek.",
+        file=sys.stderr,
+    )
     path = reference_dir / GADM_FILE
 
     if not path.exists():
