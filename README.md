@@ -126,6 +126,16 @@ model = indices.load_model(Path("out/model.json"))["education"]
 index, bands = indices.score_group(new_cells, model)
 ```
 
+## Kategori kataloğu
+
+Kategoriler, azalım katsayıları ve indeks grupları `src/urbangeoai/catalogue.py`
+dosyasında tanımlıdır. Bir kategoriyi eklemek veya çıkarmak yalnızca burayı
+değiştirmeyi gerektirir.
+
+Çıkarılan kategoriler gerekçeleriyle birlikte `RETIRED` altında tutulur; bir
+kategorinin neden yok olduğu, olmadığı kadar önemlidir. `catalogue.check()`
+katalogun kendi içinde tutarlı kaldığını doğrular ve test bunu koruyor.
+
 ## Veri denetimi
 
 POI dosyalarını kullanmadan önce doğruluk denetiminden geçirin:
@@ -201,6 +211,7 @@ src/urbangeoai/     Kütüphane kodu
   indices.py        Bileşik indeksler ve bantlama
   validation.py     Veri doğruluk denetimi
   metro.py          Metro istasyonu denetimi ve tekilleştirme
+  catalogue.py      Kategori kataloğu, azalım katsayıları, indeks grupları
 notebooks/          Keşif ve analiz defterleri
 scripts/            Komut satırı araçları
 tests/              Birim testleri ve sentetik veri
