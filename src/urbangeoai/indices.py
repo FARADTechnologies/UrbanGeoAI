@@ -85,9 +85,22 @@ def fit_group(frame: pd.DataFrame, members: list[str]) -> GroupModel:
 def fit_bands(index: np.ndarray, n_bands: int = N_BANDS) -> tuple[float, list[float]]:
     """Beraberliklere dayanıklı bant sınırları.
 
-    Taban değerindeki hücreler birinci banda ayrılır; geri kalan
-    ``n_bands - 1`` eşit dilime bölünür. Böylece bütün bantlar dolar ve en
-    yüksek bant gerçekten ``n_bands`` olur.
+    İki kural birbiriyle çelişir ve ikisi birden garanti edilemez:
+
+    1. Eşit indeks eşit bal almalı. Aynı erişilebilirliğe sahip iki nöqtəyə
+       farklı puan vermek savunulamaz.
+    2. On bandın hepsi dolmalı.
+
+    Bir değerin kütlesi ``1/n_bands``'ten büyükse ikisi aynı anda mümkün
+    değildir: o kütle bölünemez. Birinci kural korunur, ikincisinden ödün
+    verilir. Sonuçta bazı bantlar boş kalabilir; boş bant, altındaki değerde
+    büyük bir yığılma olduğunu gösteren gerçek bir bilgidir.
+
+    Uç noktalar her durumda garantilidir: en düşük değer 1, en yüksek değer
+    ``n_bands`` alır. ``apply_bands`` ara bantları buna göre gerer.
+
+    Returns:
+        (taban değeri, kesim noktaları)
     """
     series = pd.Series(index, dtype=float)
     floor = float(series.min())
@@ -95,16 +108,44 @@ def fit_bands(index: np.ndarray, n_bands: int = N_BANDS) -> tuple[float, list[fl
     if above.empty:
         return floor, []
     quantiles = np.linspace(0.0, 1.0, n_bands)[1:-1]
+    # Beraberlikler bazı kesim noktalarını üst üste düşürür; tekrarları
+    # atmak zorundayız, yoksa aynı değer iki farklı banda düşerdi.
     edges = np.unique(np.quantile(above, quantiles))
     return floor, [float(e) for e in edges]
 
 
 def apply_bands(index: np.ndarray, floor: float, edges: list[float]) -> np.ndarray:
-    """Sürekli indeksi 1-10 arası tam sayı banda çevirir."""
+    """Sürekli indeksi 1..``N_BANDS`` arası tam sayı banda çevirir.
+
+    Beraberlikler yüzünden kesim noktası sayısı beklenenden az olabilir. Bu
+    durumda bantlar gerilerek en yüksek değerin daima ``N_BANDS`` almasını
+    sağlar; aradaki bazı bantlar boş kalır.
+    """
     values = np.asarray(index, dtype=float)
-    bands = np.searchsorted(np.asarray(edges), values, side="right") + 2
+    cuts = np.asarray(edges, dtype=float)
+
+    if cuts.size == 0:
+        return np.where(values <= floor, 1, N_BANDS).astype(np.int8)
+
+    raw = np.searchsorted(cuts, values, side="right")  # 0 .. cuts.size
+    if cuts.size == N_BANDS - 2:
+        # Beklenen sayıda kesim: taban bandı ayrı, kalanlar sırayla.
+        bands = raw + 2
+    else:
+        # Kesim noktası eksik. Uç noktalar korunacak biçimde ger.
+        bands = 2 + np.rint(raw / cuts.size * (N_BANDS - 2))
     bands = np.where(values <= floor, 1, bands)
     return np.clip(bands, 1, N_BANDS).astype(np.int8)
+
+
+def band_coverage(bands: np.ndarray, n_bands: int = N_BANDS) -> dict[int, int]:
+    """Bant başına hücre sayısı. Boş bantlar sıfır olarak görünür.
+
+    Boş bant bir hata değil ama gözden kaçmamalı: altındaki değerde büyük bir
+    yığılma olduğunu, yani bal ölçeğinin o aralıkta ayrım yapamadığını söyler.
+    """
+    counts = pd.Series(bands).value_counts()
+    return {b: int(counts.get(b, 0)) for b in range(1, n_bands + 1)}
 
 
 def score_group(frame: pd.DataFrame, model: GroupModel) -> tuple[np.ndarray, np.ndarray]:
