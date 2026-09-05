@@ -104,9 +104,11 @@ suallar.html
 accessibility_audit.html
 accessibility_pipeline/
 
-# Görselleştirme çıktıları. Konsol dosyası iş ortağının POI koordinatlarını
-# gömülü olarak taşıdığı için depoda tutulmaz; üreten betik depodadır.
+# Görselleştirme çıktıları. Birleştirilmiş panel iş ortağının POI
+# koordinatlarını gömülü olarak taşıdığı için depoda tutulmaz; üreten betik ve
+# şablon depodadır, panel `python scripts/build_dashboard.py` ile üretilir.
 urbangeoai_konsol.html
+urbangeoai_panel.html
 viz_data.json
 scratch/
 tmp/
