@@ -30,7 +30,17 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from urbangeoai import catalogue, config, grid, indices, io, metro, osm, scoring  # noqa: E402
+from urbangeoai import (  # noqa: E402
+    catalogue,
+    config,
+    console,
+    grid,
+    indices,
+    io,
+    metro,
+    osm,
+    scoring,
+)
 
 #: Önceki veri sürümünde kullanılan dosya adları.
 LEGACY_SOURCES: dict[str, tuple[str, str | None]] = {
@@ -132,6 +142,9 @@ def compare(a_idx, a_band, b_idx, b_band) -> dict:
 
 
 def main() -> int:
+    # Türkçe ilerleme satırları Windows konsolunda betiği düşürmesin.
+    console.use_utf8()
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", type=Path, help="Raporu JSON olarak yaz")
     args = parser.parse_args()

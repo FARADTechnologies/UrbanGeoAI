@@ -33,7 +33,17 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from urbangeoai import catalogue, config, grid, indices, io, metro, osm, scoring  # noqa: E402
+from urbangeoai import (  # noqa: E402
+    catalogue,
+    config,
+    console,
+    grid,
+    indices,
+    io,
+    metro,
+    osm,
+    scoring,
+)
 
 #: Çıktıya eklenen üst hücre seviyeleri. Platform hangisini kullanırsa
 #: kullansın birleştirme çalışsın diye hepsi veriliyor.
@@ -74,6 +84,9 @@ def category_scores(cells: pd.DataFrame, pois: dict[str, pd.DataFrame]) -> pd.Da
 
 
 def main() -> int:
+    # Türkçe ilerleme satırları Windows konsolunda betiği düşürmesin.
+    console.use_utf8()
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--fit-on",

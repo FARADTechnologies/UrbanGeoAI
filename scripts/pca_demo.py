@@ -18,7 +18,7 @@ import numpy as np
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from urbangeoai import indices  # noqa: E402
+from urbangeoai import console, indices  # noqa: E402
 
 # Belgedeki iki ölçümlü örnek.
 SAMPLE = np.array(
@@ -58,6 +58,9 @@ def eigen_by_svd(data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def main() -> int:
+    # Türkçe ilerleme satırları Windows konsolunda betiği düşürmesin.
+    console.use_utf8()
+
     np.set_printoptions(precision=6, suppress=True)
 
     print("=" * 74)

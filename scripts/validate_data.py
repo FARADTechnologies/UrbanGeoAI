@@ -21,7 +21,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from urbangeoai import config, validation  # noqa: E402
+from urbangeoai import config, console, validation  # noqa: E402
 
 
 def _print_report(report: validation.FileReport) -> None:
@@ -49,6 +49,9 @@ def _print_report(report: validation.FileReport) -> None:
 
 
 def main() -> int:
+    # Türkçe ilerleme satırları Windows konsolunda betiği düşürmesin.
+    console.use_utf8()
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dir", type=Path, help="Denetlenecek dizin")
     parser.add_argument("--json", type=Path, help="Raporu bu dosyaya JSON olarak yaz")

@@ -27,13 +27,26 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from urbangeoai import catalogue, config, grid, indices, io, metro, osm, scoring  # noqa: E402
+from urbangeoai import (  # noqa: E402
+    catalogue,
+    config,
+    console,
+    grid,
+    indices,
+    io,
+    metro,
+    osm,
+    scoring,
+)
 
 #: Katsayı bu çarpanlarla denenir.
 FACTORS = (0.5, 2.0)
 
 
 def main() -> int:
+    # Türkçe ilerleme satırları Windows konsolunda betiği düşürmesin.
+    console.use_utf8()
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", type=Path, help="Sonucu JSON olarak yaz")
     args = parser.parse_args()
