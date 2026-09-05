@@ -143,6 +143,14 @@ def scan_file(path: Path) -> list[tuple[int, str, str, str]]:
 
 
 def main() -> int:
+    # Tarama, paket kurulu olmasa da çalışmalı; bu yüzden buradaki
+    # düzeltme urbangeoai.console yerine yerinde yapılıyor. Windows
+    # konsolu cp1252 kullanır ve Türkçe bir bulgu metni taramayı
+    # düşürebilir — güvenlik taramasının sessizce ölmemesi gerekir.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--tracked", action="store_true", help="Staged yerine takip edilen bütün dosyaları tara"
