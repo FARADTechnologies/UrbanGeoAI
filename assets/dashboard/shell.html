@@ -1,0 +1,562 @@
+<title>UrbanGeoAI Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>__TABLER__</style>
+
+<style>
+:root{
+  --tblr-font-sans-serif:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --tblr-font-monospace:"JetBrains Mono",ui-monospace,monospace;
+  --ug-teal:#0c8a86; --ug-teal-soft:rgba(12,138,134,.12);
+}
+[data-bs-theme="dark"]{ --ug-teal:#3fb8b2; --ug-teal-soft:rgba(63,184,178,.16); }
+
+body{font-feature-settings:"cv03","cv04","cv11"}
+.page{min-height:100vh}
+.navbar-brand-mark{width:30px;height:30px;border-radius:7px;background:var(--ug-teal);
+  display:grid;place-content:center;color:#fff;font-weight:700;font-size:.72rem;letter-spacing:-.02em}
+.nav-link.active{background:var(--ug-teal-soft)!important;color:var(--ug-teal)!important;font-weight:600}
+.nav-link .icon{width:18px;height:18px;stroke-width:1.8}
+.mono,.font-monospace{font-family:var(--tblr-font-monospace)!important;font-variant-numeric:tabular-nums}
+.text-ug{color:var(--ug-teal)!important}
+.bg-ug{background:var(--ug-teal)!important}
+.bg-ug-soft{background:var(--ug-teal-soft)!important}
+
+/* map */
+.mapshell{position:relative;background:var(--tblr-bg-surface-secondary);border-radius:var(--tblr-border-radius)}
+#map,#metroMap{width:100%;height:auto;display:block}
+#map path.hex{stroke:none;cursor:crosshair}
+path.brd{fill:none;stroke:var(--tblr-border-color-translucent);stroke-width:1.3;vector-effect:non-scaling-stroke}
+circle.poi{stroke:none}
+circle.mnode{stroke:var(--tblr-bg-surface);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.maptip{position:absolute;pointer-events:none;z-index:10;opacity:0;transition:opacity .08s;
+  background:var(--tblr-bg-surface);border:1px solid var(--tblr-border-color);
+  border-radius:var(--tblr-border-radius);padding:8px 11px;box-shadow:var(--tblr-box-shadow);min-width:150px}
+.maptip .r{display:flex;justify-content:space-between;gap:16px;font-size:11.5px;line-height:1.65;
+  font-family:var(--tblr-font-monospace);font-variant-numeric:tabular-nums}
+.ramp{display:flex;height:7px;width:130px;border-radius:3px;overflow:hidden}
+.ramp i{flex:1}
+
+.optlist{max-height:230px;overflow-y:auto;margin:-4px -6px}
+.optbtn{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;text-align:left;
+  padding:5px 8px;border-radius:6px;font-size:13px;color:var(--tblr-secondary);cursor:pointer}
+.optbtn:hover{background:var(--tblr-bg-surface-secondary)}
+.optbtn[aria-pressed="true"]{background:var(--ug-teal-soft);color:var(--ug-teal);font-weight:600}
+.optbtn .dot{width:8px;height:8px;border-radius:50%;background:var(--tblr-border-color);flex:none}
+.optbtn[aria-pressed="true"] .dot{background:var(--ug-teal)}
+.optbtn .n{margin-left:auto;font-family:var(--tblr-font-monospace);font-size:11px;opacity:.65}
+
+.cm td{width:44px;height:29px;text-align:center;border-radius:4px;font-size:11px;
+  font-family:var(--tblr-font-monospace);font-variant-numeric:tabular-nums;padding:0}
+.cm th{font-size:11px;font-weight:500;color:var(--tblr-secondary);padding:0 7px;text-align:right;white-space:nowrap}
+.cm th.v{writing-mode:vertical-rl;text-align:left;height:62px;padding:4px 0}
+
+.bandbar{display:flex;height:22px;border-radius:4px;overflow:hidden;background:var(--tblr-bg-surface-secondary)}
+.bandbar i{display:block}
+.q{border-left:3px solid var(--tblr-border-color)}
+.q.blk{border-left-color:var(--tblr-danger)}
+.q.prd{border-left-color:var(--tblr-warning)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="page">
+  <aside class="navbar navbar-vertical navbar-expand-lg" id="side">
+    <div class="container-fluid">
+      <h1 class="navbar-brand mb-0">
+        <a href="#" class="d-flex align-items-center gap-2 text-decoration-none">
+          <span class="navbar-brand-mark">UG</span>
+          <span class="d-flex flex-column lh-1">
+            <span class="fw-bold" style="font-size:15px">UrbanGeoAI</span>
+            <span class="text-secondary" style="font-size:11px">Bakı əlçatanlıq</span>
+          </span>
+        </a>
+      </h1>
+      <div class="collapse navbar-collapse show">
+        <ul class="navbar-nav pt-3" id="nav"></ul>
+        <div class="mt-auto pt-4 pb-2">
+          <div class="text-secondary" style="font-size:11px;line-height:1.7">
+            <div class="d-flex justify-content-between"><span>şəbəkə</span><span class="mono" id="sbCells"></span></div>
+            <div class="d-flex justify-content-between"><span>POI</span><span class="mono" id="sbPoi"></span></div>
+            <div class="d-flex justify-content-between"><span>indeks</span><span class="mono" id="sbIdx"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="page-wrapper">
+    <div class="page-header d-print-none">
+      <div class="container-xl">
+        <div class="row g-2 align-items-center">
+          <div class="col">
+            <div class="page-pretitle" id="pretitle"></div>
+            <h2 class="page-title" id="ptitle"></h2>
+          </div>
+          <div class="col-auto ms-auto d-print-none">
+            <span class="badge bg-green-lt">boru xətti işləyir</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div class="container-xl" id="views"></div>
+    </div>
+
+    <footer class="footer footer-transparent d-print-none">
+      <div class="container-xl">
+        <div class="row text-secondary align-items-center" style="font-size:12px">
+          <div class="col">Bütün rəqəmlər <code>urbangeoai</code> paketindən hesablanıb — əl ilə yazılmış dəyər yoxdur.</div>
+          <div class="col-auto" id="footMeta"></div>
+        </div>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<script id="D" type="application/json">__DATA__</script>
+<script>
+(function(){
+"use strict";
+var D=JSON.parse(document.getElementById("D").textContent);
+var $=function(i){return document.getElementById(i);};
+var el=function(t,c,h){var e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
+var nf=function(n){return n==null?"—":Number(n).toLocaleString("az-AZ");};
+
+/* Tabler'in tema sistemi artifact'inkinden farkli; koprü kuruyoruz. */
+function syncTheme(){
+  var root=document.documentElement;
+  var stamped=root.getAttribute("data-theme");
+  var dark = stamped==="dark" || (!stamped && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  root.setAttribute("data-bs-theme", dark?"dark":"light");
+}
+syncTheme();
+try{ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",syncTheme); }catch(e){}
+new MutationObserver(syncTheme).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+var LBL={kdgr:"uşaq bağçası",schl:"məktəb",univ:"ali məktəb",bus:"dayanacaq",metro:"metro",
+ shopping:"ticarət mərkəzi",parks:"park",museum:"muzey",theatre:"teatr",coffee:"kafe",
+ restaurant:"restoran",fast_food:"fast-food",bars:"bar",sport:"idman zalı",hotel:"hotel",
+ monuments:"tarixi abidə",camera:"kamera",fire:"yanğından mühafizə"};
+var IDX=Object.keys(D.indices);
+
+/* ── renk rampalari ── */
+function ramp(stops,t){t=Math.max(0,Math.min(1,t));var x=t*(stops.length-1),i=Math.floor(x),f=x-i;
+ if(i>=stops.length-1)return "rgb("+stops[stops.length-1].join(",")+")";
+ var a=stops[i],b=stops[i+1];
+ return "rgb("+Math.round(a[0]+(b[0]-a[0])*f)+","+Math.round(a[1]+(b[1]-a[1])*f)+","+Math.round(a[2]+(b[2]-a[2])*f)+")";}
+var SEQ=[[236,242,242],[181,215,213],[116,186,182],[46,150,146],[10,106,103],[6,58,56]];
+var DIV=[[176,58,19],[219,148,113],[236,238,237],[116,190,186],[10,116,112]];
+var seq=function(t){return ramp(SEQ,t);}, div=function(t){return ramp(DIV,(t+1)/2);};
+
+/* ── sidebar meta ── */
+var M=D.meta;
+$("sbCells").textContent=nf(M.cells);
+$("sbPoi").textContent=nf(M.poi);
+$("sbIdx").textContent=M.indices;
+$("footMeta").textContent="res-"+M.resolution+" · "+nf(M.cells8)+" res-8 altıgen";
+
+/* ── icons (inline, dis kaynak yok) ── */
+var ICO={
+ home:'<path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/>',
+ map:'<path d="M3 7l6 -3l6 3l6 -3v13l-6 3l-6 -3l-6 3v-13"/><path d="M9 4v13"/><path d="M15 7v13"/>',
+ chart:'<path d="M3 3v18h18"/><path d="M9 17V9"/><path d="M13 17V5"/><path d="M17 17v-3"/>',
+ train:'<path d="M4 15a4 4 0 0 0 4 4h8a4 4 0 0 0 4 -4v-8a4 4 0 0 0 -4 -4h-8a4 4 0 0 0 -4 4z"/><path d="M8 19l-2 3"/><path d="M16 19l2 3"/><path d="M9 7h6"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/>',
+ check:'<path d="M9 11l3 3l8 -8"/><path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9"/>',
+ diff:'<path d="M12 3v18"/><path d="M5 8l7 -5l7 5"/><path d="M5 16l7 5l7 -5"/>',
+ bulb:'<path d="M3 12h1m8 -9v1m8 8h1m-15.4 -6.4l.7 .7m12.1 -.7l-.7 .7"/><path d="M9 16a5 5 0 1 1 6 0a3.5 3.5 0 0 0 -1 3a2 2 0 0 1 -4 0a3.5 3.5 0 0 0 -1 -3"/>'
+};
+function svg(name){return '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+ICO[name]+'</svg>';}
+
+/* ── views ── */
+var VIEWS=[
+ {id:"ov", ico:"home",  t:"İcmal",         sub:"Boru xəttinin ümumi vəziyyəti"},
+ {id:"mp", ico:"map",   t:"Xəritə",        sub:"İndekslərin məkan üzrə paylanması"},
+ {id:"ix", ico:"chart", t:"İndekslər",     sub:"PCA quruluşu, yüklər və asılılıq"},
+ {id:"mt", ico:"train", t:"Metro",         sub:"Xam OSM düğümlərinin denetimi"},
+ {id:"vl", ico:"check", t:"Veri denetimi", sub:"Mənbə fayllarının doğruluğu"},
+ {id:"ch", ico:"diff",  t:"Dəyişim",       sub:"2025 → 2026 və üsul təsiri"},
+ {id:"pr", ico:"bulb",  t:"Təkliflər",     sub:"Bizim əlavə etdiyimiz maddələr"}
+];
+VIEWS.forEach(function(v,i){
+  var li=el("li","nav-item"+(i===0?" active":""));
+  li.innerHTML='<a class="nav-link'+(i===0?" active":"")+'" href="#" data-v="'+v.id+'">'+
+    '<span class="nav-link-icon d-md-none d-lg-inline-block">'+svg(v.ico)+'</span>'+
+    '<span class="nav-link-title">'+v.t+'</span></a>';
+  li.querySelector("a").addEventListener("click",function(e){e.preventDefault();show(v.id);});
+  $("nav").appendChild(li);
+  var sec=el("div"); sec.id="v-"+v.id; sec.hidden=i!==0; $("views").appendChild(sec);
+});
+function show(id){
+  VIEWS.forEach(function(v){ $("v-"+v.id).hidden=v.id!==id; });
+  [].forEach.call($("nav").querySelectorAll("a"),function(a){
+    var on=a.dataset.v===id;
+    a.classList.toggle("active",on); a.parentNode.classList.toggle("active",on);
+  });
+  var v=VIEWS.filter(function(x){return x.id===id;})[0];
+  $("pretitle").textContent="UrbanGeoAI"; $("ptitle").textContent=v.t;
+  document.querySelector(".page-pretitle").textContent=v.sub;
+  if(id==="mt") drawMetro();
+  if(id==="mp") requestAnimationFrame(paint);
+}
+
+function card(title,body,extra){
+  return '<div class="card '+(extra||"")+'"><div class="card-header"><h3 class="card-title">'+title+
+    '</h3></div><div class="card-body">'+body+'</div></div>';
+}
+function kpi(value,label,tone){
+  return '<div class="col-6 col-sm-4 col-xl-2"><div class="card card-sm"><div class="card-body">'+
+    '<div class="h1 mb-0 mono '+(tone||"")+'">'+value+'</div>'+
+    '<div class="text-secondary" style="font-size:12px;line-height:1.4">'+label+'</div></div></div></div>';
+}
+
+/* ═══ İCMAL ═══ */
+(function(){
+  var kpis=[kpi(nf(M.cells),"H3 res-10 hüceyrə"),kpi(nf(M.poi),"POI qeydi"),
+    kpi(M.categories,"kateqoriya"),kpi(M.indices,"indeks"),
+    kpi(M.metro_kept+"/"+M.metro_raw,"metro stansiyası"),
+    kpi(M.csv_mb?M.csv_mb+" MB":"—","təhvil faylı")];
+  var bands=IDX.map(function(g){
+    var b=D.pca[g].bands, tot=0; Object.keys(b).forEach(function(k){tot+=b[k];});
+    var segs=""; for(var i=1;i<=10;i++){
+      var w=tot?b[i]/tot*100:0;
+      segs+='<i style="width:'+w+'%;background:'+seq((i-1)/9)+'" title="bant '+i+': '+nf(b[i])+'"></i>';
+    }
+    var empty=[]; for(var j=1;j<=10;j++) if(!b[j]) empty.push(j);
+    return '<div class="mb-3"><div class="d-flex justify-content-between mb-1" style="font-size:12.5px">'+
+      '<span class="fw-medium">'+g+'</span>'+
+      '<span class="text-secondary mono">var %'+D.pca[g].evr+(empty.length?' · boş bant '+empty.join(","):'')+'</span></div>'+
+      '<div class="bandbar">'+segs+'</div></div>';
+  }).join("");
+  var ret=Object.keys(D.retired).map(function(k){
+    return '<div class="alert alert-info mb-0" role="alert"><div class="d-flex"><div>'+
+      '<strong>'+k+'</strong> çıxarıldı — '+D.retired[k]+'</div></div></div>';}).join("");
+  $("v-ov").innerHTML=
+    '<div class="row row-deck row-cards mb-3">'+kpis.join("")+'</div>'+
+    '<div class="row row-deck row-cards"><div class="col-lg-7">'+
+      card("Bant paylanması",'<p class="text-secondary" style="font-size:13px">Hər indeksin 1–10 bantlarına neçə hüceyrə düşür. Birinci bant, ətrafında xidmət olmayan hüceyrələri saxlayır.</p>'+bands)+
+    '</div><div class="col-lg-5">'+
+      card("Vəziyyət",
+        '<div class="datagrid">'+
+        '<div class="datagrid-item"><div class="datagrid-title">Analiz sınırı</div><div class="datagrid-content">iş ortağının faylı · <span class="text-green">şəbəkə birebir uyğun</span></div></div>'+
+        '<div class="datagrid-item"><div class="datagrid-title">Bal ölçəyi</div><div class="datagrid-content">dondurulmuş model · 2025 bazası</div></div>'+
+        '<div class="datagrid-item"><div class="datagrid-title">Tavan</div><div class="datagrid-content">bütün indekslərdə <span class="mono">10/10</span></div></div>'+
+        '<div class="datagrid-item"><div class="datagrid-title">Çıxış</div><div class="datagrid-content mono">res-6 / 7 / 8 üst hüceyrələri ilə</div></div>'+
+        '</div>')+
+      (ret?'<div class="mt-3">'+ret+'</div>':'')+
+    '</div></div>';
+})();
+
+/* ═══ XƏRİTƏ ═══ */
+(function(){
+  $("v-mp").innerHTML=
+   '<div class="row row-deck row-cards"><div class="col-lg-3">'+
+     '<div class="card"><div class="card-body">'+
+       '<div class="mb-3"><div class="form-label">İndeks</div><div class="optlist" id="oIdx"></div></div>'+
+       '<div class="mb-3"><div class="form-label">Görünüş</div>'+
+         '<div class="btn-group w-100" role="group" id="oMode">'+
+           '<button type="button" class="btn btn-sm active" data-m="value">Bal</button>'+
+           '<button type="button" class="btn btn-sm" data-m="delta">Dəyişim</button></div></div>'+
+       '<div><div class="form-label">POI qatı</div><div class="optlist" id="oPoi"></div></div>'+
+     '</div></div></div>'+
+     '<div class="col-lg-9"><div class="card"><div class="card-body p-2">'+
+       '<div class="mapshell" id="mapshell"><svg id="map" role="img" aria-label="Bakı əlçatanlıq xəritəsi"></svg>'+
+       '<div class="maptip" id="tip"></div></div></div>'+
+       '<div class="card-footer d-flex align-items-center justify-content-between" style="font-size:12px">'+
+         '<div class="d-flex align-items-center gap-2"><span id="lgA" class="text-secondary"></span>'+
+         '<span class="ramp" id="rampEl"></span><span id="lgB" class="text-secondary"></span></div>'+
+         '<div class="text-secondary" id="mapNote"></div></div>'+
+     '</div></div></div>';
+
+  var svgEl=$("map"), tip=$("tip"), st={idx:IDX[0],mode:"value",poi:null};
+  svgEl.setAttribute("viewBox","0 0 "+D.map.w+" "+D.map.h);
+  var NS="http://www.w3.org/2000/svg";
+  var gH=document.createElementNS(NS,"g"), gB=document.createElementNS(NS,"g"), gP=document.createElementNS(NS,"g");
+  svgEl.appendChild(gH); svgEl.appendChild(gB); svgEl.appendChild(gP);
+  var nodes=D.map.hexes.map(function(d,i){
+    var p=document.createElementNS(NS,"path"); p.setAttribute("d",d); p.setAttribute("class","hex");
+    p.dataset.i=i; gH.appendChild(p); return p;});
+  D.map.border.forEach(function(d){var p=document.createElementNS(NS,"path");
+    p.setAttribute("d",d); p.setAttribute("class","brd"); gB.appendChild(p);});
+
+  window.paint=function(){
+    var vals=st.mode==="value"?D.indices[st.idx]:D.deltas[st.idx], mx=1;
+    if(st.mode==="delta"){mx=0; for(var k=0;k<vals.length;k++) if(vals[k]!=null) mx=Math.max(mx,Math.abs(vals[k])); mx=mx||1;}
+    for(var i=0;i<nodes.length;i++){
+      var v=vals?vals[i]:null;
+      nodes[i].setAttribute("fill",v==null?"transparent":(st.mode==="value"?seq((v-1)/9):div(v/mx)));
+    }
+    var r=$("rampEl");
+    if(st.mode==="value"){
+      $("lgA").textContent="1 zəif"; $("lgB").textContent="10 güclü";
+      r.innerHTML=[0,.2,.4,.6,.8,1].map(function(t){return '<i style="background:'+seq(t)+'"></i>';}).join("");
+      $("mapNote").textContent=st.idx+" · 2026 · res-8 ortalaması";
+    }else{
+      $("lgA").textContent="azalma"; $("lgB").textContent="artım";
+      r.innerHTML=[0,.25,.5,.75,1].map(function(t){return '<i style="background:'+div(t*2-1)+'"></i>';}).join("");
+      $("mapNote").textContent=st.idx+" · 2025→2026 · dondurulmuş model";
+    }
+  };
+
+  IDX.forEach(function(g){
+    var b=el("button","optbtn"); b.type="button";
+    b.setAttribute("aria-pressed",g===st.idx?"true":"false");
+    b.innerHTML='<span class="dot"></span>'+g;
+    b.onclick=function(){
+      st.idx=g;
+      [].forEach.call($("oIdx").children,function(c){c.setAttribute("aria-pressed","false");});
+      b.setAttribute("aria-pressed","true");
+      var has=!!D.deltas[g], mb=$("oMode").children;
+      mb[1].disabled=!has; mb[1].classList.toggle("disabled",!has);
+      if(!has&&st.mode==="delta"){st.mode="value";mb[0].classList.add("active");mb[1].classList.remove("active");}
+      paint();
+    };
+    $("oIdx").appendChild(b);
+  });
+  [].forEach.call($("oMode").children,function(b){
+    b.onclick=function(){ if(b.disabled)return; st.mode=b.dataset.m;
+      [].forEach.call($("oMode").children,function(c){c.classList.remove("active");});
+      b.classList.add("active"); paint(); };
+  });
+  (function(){
+    var none=el("button","optbtn"); none.type="button"; none.setAttribute("aria-pressed","true");
+    none.innerHTML='<span class="dot"></span>yoxdur';
+    none.onclick=function(){st.poi=null;setP(none);}; $("oPoi").appendChild(none);
+    Object.keys(D.poiPoints).forEach(function(k){
+      var b=el("button","optbtn"); b.type="button"; b.setAttribute("aria-pressed","false");
+      b.innerHTML='<span class="dot"></span>'+(LBL[k]||k)+'<span class="n">'+D.poiPoints[k].length+'</span>';
+      b.onclick=function(){st.poi=k;setP(b);}; $("oPoi").appendChild(b);
+    });
+    function setP(a){
+      [].forEach.call($("oPoi").children,function(c){c.setAttribute("aria-pressed","false");});
+      a.setAttribute("aria-pressed","true");
+      gP.innerHTML="";
+      if(!st.poi)return;
+      var pts=D.poiPoints[st.poi], f=document.createDocumentFragment();
+      for(var i=0;i<pts.length;i++){
+        var c=document.createElementNS(NS,"circle");
+        c.setAttribute("cx",pts[i][0]); c.setAttribute("cy",pts[i][1]);
+        c.setAttribute("r",pts.length>1200?1.3:2.1); c.setAttribute("class","poi");
+        c.setAttribute("fill","#d63939"); c.setAttribute("fill-opacity",pts.length>1200?".7":".88");
+        f.appendChild(c);
+      }
+      gP.appendChild(f);
+    }
+  })();
+
+  var shell=$("mapshell");
+  svgEl.addEventListener("mousemove",function(e){
+    var t=e.target;
+    if(t.tagName!=="path"||t.getAttribute("class")!=="hex"){tip.style.opacity=0;return;}
+    var i=+t.dataset.i, rows="";
+    IDX.forEach(function(g){
+      var v=D.indices[g][i], d=D.deltas[g]?D.deltas[g][i]:null;
+      if(v==null)return;
+      var ds=d==null?"":(d>.05?' <span class="text-green">+'+d.toFixed(1)+'</span>':d<-.05?' <span class="text-red">'+d.toFixed(1)+'</span>':'');
+      rows+='<div class="r"><span class="text-secondary">'+g+'</span><span>'+v.toFixed(1)+ds+'</span></div>';
+    });
+    if(!rows){tip.style.opacity=0;return;}
+    tip.innerHTML=rows;
+    var r=shell.getBoundingClientRect(), x=e.clientX-r.left+14, y=e.clientY-r.top+14;
+    if(x+185>r.width)x=e.clientX-r.left-183;
+    if(y+160>r.height)y=Math.max(4,e.clientY-r.top-160);
+    tip.style.left=x+"px"; tip.style.top=y+"px"; tip.style.opacity=1;
+  });
+  svgEl.addEventListener("mouseleave",function(){tip.style.opacity=0;});
+  paint();
+})();
+
+/* ═══ İNDEKSLƏR ═══ */
+(function(){
+  var evr=IDX.map(function(g){
+    var v=D.pca[g].evr, tone=v>=80?"bg-green":v>=60?"bg-yellow":"bg-red";
+    return '<div class="mb-2"><div class="d-flex justify-content-between" style="font-size:12.5px">'+
+      '<span>'+g+'</span><span class="mono text-secondary">%'+v+'</span></div>'+
+      '<div class="progress progress-sm"><div class="progress-bar '+tone+'" style="width:'+v+'%"></div></div></div>';
+  }).join("");
+  var load=IDX.map(function(g){
+    var P=D.pca[g];
+    return '<div class="mb-3"><div class="fw-medium mb-1" style="font-size:12.5px">'+g+'</div>'+
+      P.members.map(function(m,i){
+        var v=P.loadings[i];
+        return '<div class="d-flex align-items-center gap-2 mb-1" style="font-size:11.5px">'+
+          '<span class="text-secondary" style="width:96px;flex:none">'+(LBL[m]||m)+'</span>'+
+          '<div class="progress progress-sm flex-fill"><div class="progress-bar '+(v>0?"bg-ug":"bg-red")+'" style="width:'+Math.abs(v)*100+'%"></div></div>'+
+          '<span class="mono" style="width:44px;text-align:right">'+(v>0?"+":"")+v.toFixed(2)+'</span></div>';
+      }).join("")+'</div>';
+  }).join("");
+  var C=D.cross, L=C.labels;
+  var cm='<table class="cm" style="border-collapse:separate;border-spacing:2px"><tr><th></th>'+
+    L.map(function(x){return '<th class="v">'+x+'</th>';}).join("")+'</tr>'+
+    L.map(function(a){return '<tr><th>'+a+'</th>'+L.map(function(b){
+      var v=C.corr[a][b];
+      return '<td style="background:'+seq(Math.max(0,v))+';color:'+(v>.55?"#fff":"var(--tblr-body-color)")+'">'+v.toFixed(2)+'</td>';
+    }).join("")+'</tr>';}).join("")+'</table>';
+  var pcs=C.evr.slice(0,5).map(function(v,i){
+    return '<div class="d-flex align-items-center gap-2 mb-1" style="font-size:12px">'+
+      '<span class="mono text-secondary" style="width:34px">PC'+(i+1)+'</span>'+
+      '<div class="progress progress-sm flex-fill"><div class="progress-bar '+(i?"bg-secondary":"bg-orange")+'" style="width:'+v+'%"></div></div>'+
+      '<span class="mono" style="width:46px;text-align:right">%'+v+'</span></div>';}).join("");
+
+  $("v-ix").innerHTML='<div class="row row-deck row-cards"><div class="col-lg-6">'+
+    card("Açıqlanan varyans",'<p class="text-secondary" style="font-size:13px">Qrup üzvlərinin nə qədərinin tək sayı ilə anladıla bildiyi. %80 üzəri yaxşı.</p>'+evr)+
+    '</div><div class="col-lg-6">'+
+    card("Bileşen yükleri",'<p class="text-secondary" style="font-size:13px">Hər kateqoriyanın indeksə töhfəsi. Hamısı müsbət olmalı; mənfi çıxan üzv qrupun tək anlayış olmadığını göstərir.</p>'+load)+
+    '</div><div class="col-12">'+
+    card("İndekslər bir-birindən nə qədər fərqli",
+      '<div class="row"><div class="col-lg-6"><div style="overflow-x:auto">'+cm+'</div>'+
+      '<p class="text-secondary mt-2 mb-0" style="font-size:12.5px">1-ə yaxın dəyər, iki indeksin demək olar eyni şeyi ölçdüyü deməkdir.</p></div>'+
+      '<div class="col-lg-6"><div class="fw-medium mb-2" style="font-size:12.5px">İndekslərin öz üzərində PCA</div>'+pcs+
+      '<div class="alert alert-warning mt-3 mb-0"><strong>Bütün fərqliliyin %'+C.evr[0]+'-i tək bir amildir</strong> — praktikada «mərkəzə nə qədər yaxınsan». Müştəriyə '+L.length+' ayrı bal göstərilir, amma hamısı böyük ölçüdə eyni şeyi deyir.</div></div></div>')+
+    '</div></div>';
+})();
+
+/* ═══ METRO ═══ */
+var metroDrawn=false;
+function drawMetro(){
+  if(metroDrawn)return; metroDrawn=true;
+  var ms=$("metroMap"); if(!ms)return;
+  var NS="http://www.w3.org/2000/svg";
+  ms.setAttribute("viewBox","0 0 "+D.map.w+" "+D.map.h);
+  D.map.border.forEach(function(d){var p=document.createElementNS(NS,"path");
+    p.setAttribute("d",d); p.setAttribute("class","brd"); ms.appendChild(p);});
+  D.metro.nodes.forEach(function(n){
+    var c=document.createElementNS(NS,"circle");
+    c.setAttribute("cx",n.p[0]); c.setAttribute("cy",n.p[1]);
+    c.setAttribute("r",n.d==="tutuldu"?6:5); c.setAttribute("class","mnode");
+    c.setAttribute("fill",MC[n.d]); c.setAttribute("fill-opacity",n.d==="tutuldu"?"1":".85");
+    var t=document.createElementNS(NS,"title"); t.textContent=n.n+" — "+DC[n.d][1];
+    c.appendChild(t); ms.appendChild(c);
+  });
+}
+var DC={tutuldu:["bg-green-lt","tutuldu"],birebir_tekrar:["bg-red-lt","birebir təkrar"],
+ servis_noktasi:["bg-red-lt","servis nöqtəsi"],isletmede_degil:["bg-red-lt","işləmədə deyil"],
+ aktarma_kompleksi:["bg-orange-lt","aktarma kompleksi"],isimsiz:["bg-secondary-lt","adsız"]};
+var MC={tutuldu:"#2fb344",birebir_tekrar:"#d63939",servis_noktasi:"#d63939",
+ isletmede_degil:"#d63939",aktarma_kompleksi:"#f76707",isimsiz:"#667382"};
+(function(){
+  var s=D.metro.summary, tot=0; Object.keys(s).forEach(function(k){tot+=s[k];});
+  var order=["tutuldu","isletmede_degil","servis_noktasi","birebir_tekrar","aktarma_kompleksi"];
+  var kpis=kpi(tot,"xam OSM düğümü")+order.filter(function(k){return s[k];}).map(function(k){
+    return kpi(s[k],DC[k][1],k==="tutuldu"?"text-green":"text-red");}).join("");
+  var rows=D.metro.nodes.slice().sort(function(a,b){
+    return a.d===b.d?a.n.localeCompare(b.n,"az"):(a.d==="tutuldu"?1:-1);}).map(function(n){
+    return '<tr><td class="fw-medium">'+n.n+'</td><td><span class="badge '+DC[n.d][0]+'">'+DC[n.d][1]+'</span></td>'+
+      '<td class="text-secondary" style="font-size:12px;white-space:normal">'+n.r+'</td></tr>';}).join("");
+  $("v-mt").innerHTML='<div class="row row-deck row-cards mb-3">'+kpis+'</div>'+
+    '<div class="row row-deck row-cards"><div class="col-lg-5"><div class="card">'+
+      '<div class="card-header"><h3 class="card-title">Konum</h3></div>'+
+      '<div class="card-body p-2"><div class="mapshell"><svg id="metroMap" role="img" aria-label="Metro düğümləri"></svg></div></div></div></div>'+
+    '<div class="col-lg-7"><div class="card"><div class="card-header"><h3 class="card-title">Hər düğüm və qərarı</h3></div>'+
+      '<div class="table-responsive" style="max-height:520px"><table class="table table-vcenter card-table table-sm">'+
+      '<thead><tr><th>Düğüm</th><th>Qərar</th><th>Səbəb</th></tr></thead><tbody>'+rows+'</tbody></table></div></div></div></div>';
+})();
+
+/* ═══ VERİ DENETİMİ ═══ */
+(function(){
+  var f=D.validation, err=0, warn=0, rows=0;
+  f.forEach(function(x){rows+=x.rows; x.findings.forEach(function(y){
+    if(y.severity==="error")err++; else if(y.severity==="warning")warn++;});});
+  var body=f.map(function(x){
+    var e=x.findings.filter(function(y){return y.severity==="error";}).length;
+    var w=x.findings.filter(function(y){return y.severity==="warning";}).length;
+    var cls=e?"bg-red-lt":w?"bg-yellow-lt":"bg-green-lt", txt=e?"xəta":w?"xəbərdarlıq":"təmiz";
+    var tags=x.findings.map(function(y){
+      var c=y.severity==="error"?"bg-red-lt":y.severity==="warning"?"bg-yellow-lt":"bg-blue-lt";
+      return '<span class="badge '+c+' me-1 mb-1">'+y.check+' '+y.count+'</span>';}).join("")||'<span class="text-secondary">—</span>';
+    return '<tr><td class="fw-medium">'+x.file+'</td><td class="mono text-end">'+nf(x.rows)+'</td>'+
+      '<td><span class="badge '+cls+'">'+txt+'</span></td><td style="white-space:normal">'+tags+'</td></tr>';}).join("");
+  var alerts=[];
+  f.forEach(function(x){
+    x.findings.filter(function(y){return y.severity!=="info";}).forEach(function(y){
+      alerts.push('<div class="alert alert-'+(y.severity==="error"?"danger":"warning")+' mb-2">'+
+        '<strong>'+x.file+'</strong> — '+y.message+' <span class="mono">('+y.count+')</span></div>');});});
+  $("v-vl").innerHTML='<div class="row row-deck row-cards mb-3">'+
+    kpi(f.length,"fayl tarandı")+kpi(nf(rows),"sətir")+
+    kpi(err,"xəta",err?"text-red":"text-green")+kpi(warn,"xəbərdarlıq",warn?"text-yellow":"text-green")+'</div>'+
+    '<div class="card mb-3"><div class="table-responsive"><table class="table table-vcenter card-table">'+
+    '<thead><tr><th>Fayl</th><th class="text-end">Sətir</th><th>Vəziyyət</th><th>Tapıntılar</th></tr></thead>'+
+    '<tbody>'+body+'</tbody></table></div></div>'+(alerts.length?alerts.join(""):"");
+})();
+
+/* ═══ DƏYİŞİM ═══ */
+(function(){
+  var cnt=D.counts.filter(function(c){return c.old!=null;});
+  cnt.sort(function(a,b){return (b.new-b.old)/b.old-(a.new-a.old)/a.old;});
+  var mx=Math.max.apply(null,cnt.map(function(c){return Math.abs(c.new-c.old);}));
+  var rows=cnt.map(function(c){
+    var d=c.new-c.old, p=c.old?Math.round(d/c.old*100):0;
+    return '<tr><td>'+(LBL[c.k]||c.k)+'</td><td class="mono text-end">'+nf(c.old)+'</td>'+
+      '<td class="mono text-end">'+nf(c.new)+'</td>'+
+      '<td class="mono text-end '+(d>0?"text-green":d<0?"text-red":"text-secondary")+'">'+(d>0?"+":"")+d+' ('+(p>0?"+":"")+p+'%)</td>'+
+      '<td style="width:150px"><div class="progress progress-sm"><div class="progress-bar '+(d<0?"bg-red":"bg-ug")+'" style="width:'+Math.abs(d)/mx*100+'%"></div></div></td></tr>';}).join("")+
+    D.counts.filter(function(c){return c.old==null;}).map(function(c){
+      return '<tr><td>'+(LBL[c.k]||c.k)+'</td><td class="text-secondary text-end">—</td>'+
+        '<td class="mono text-end">'+nf(c.new)+'</td><td><span class="badge bg-blue-lt">yeni kateqoriya</span></td><td></td></tr>';}).join("");
+
+  var cmp="";
+  if(D.comparison){
+    var mk=function(tbl,note){
+      return '<p class="text-secondary" style="font-size:13px">'+note+'</p>'+
+      '<div class="table-responsive"><table class="table table-sm table-vcenter"><thead><tr>'+
+      '<th>İndeks</th><th class="text-end">Spearman</th><th class="text-end">Oynayan</th>'+
+      '<th class="text-end">Yuxarı</th><th class="text-end">Aşağı</th><th class="text-end">Tavan</th></tr></thead><tbody>'+
+      Object.keys(tbl).map(function(g){var r=tbl[g];
+        return '<tr><td>'+g+'</td><td class="mono text-end">'+r.spearman.toFixed(4)+'</td>'+
+        '<td class="mono text-end">%'+r.moved_pct+'</td>'+
+        '<td class="mono text-end text-green">%'+r.up_pct+'</td>'+
+        '<td class="mono text-end text-red">%'+r.down_pct+'</td>'+
+        '<td class="mono text-end">'+r.max_band_before+'→'+r.max_band_after+'</td></tr>';}).join("")+
+      '</tbody></table></div>';};
+    cmp='<div class="col-12">'+card("Veri təsiri — eyni üsul, 2025 → 2026",
+      mk(D.comparison.data_effect,"Yalnız veri dəyişdi. Diqqət: POI sayı bütün kateqoriyalarda artdığı halda əksər indekslərdə aşağı hərəkət yuxarıdan çoxdur — köhnə üsul hər dəfə sıfırdan sıraladığı üçün, öz ətrafı dəyişməyən bir yer sırada geri düşür."))+'</div>'+
+      '<div class="col-12">'+card("Üsul təsiri — eyni veri, köhnə → yeni üsul",
+      mk(D.comparison.method_effect,"Veri sabit. Sıralama demək olar dəyişmir (Spearman 0.99+) amma hüceyrələrin yarısından çoxu bant dəyişir və hamısı yuxarı — tavan açıldığı üçün bütün ölçək gərilir."))+'</div>';
+  }
+
+  var beta="";
+  if(D.beta){
+    var bk=Object.keys(D.beta).map(function(k){
+      var r=D.beta[k], worst=Math.max.apply(null,Object.keys(r.effect).map(function(f){return r.effect[f];}));
+      return {k:k,worst:worst,beta:r.beta,groups:r.groups};});
+    bk.sort(function(a,b){return b.worst-a.worst;});
+    beta='<div class="col-12">'+card("Katsayı duyarlılığı",
+      '<p class="text-secondary" style="font-size:13px">Hər azalım katsayısı ayrı-ayrı yarıya endirilib iki qat artırıldı. Çox oynadan katsayı, kalibrləmənin əsl hədəfidir; az oynadan səhv seçilmiş olsa belə nəticəni pozmur.</p>'+
+      bk.map(function(x){
+        return '<div class="d-flex align-items-center gap-2 mb-1" style="font-size:12px">'+
+          '<span style="width:108px;flex:none">'+(LBL[x.k]||x.k)+'</span>'+
+          '<span class="mono text-secondary" style="width:38px">'+x.beta.toFixed(2)+'</span>'+
+          '<div class="progress progress-sm flex-fill"><div class="progress-bar '+(x.worst>50?"bg-red":x.worst>20?"bg-yellow":"bg-green")+'" style="width:'+x.worst+'%"></div></div>'+
+          '<span class="mono" style="width:48px;text-align:right">%'+x.worst.toFixed(1)+'</span></div>';}).join(""))+'</div>';
+  }
+
+  $("v-ch").innerHTML='<div class="row row-deck row-cards">'+
+    '<div class="col-12"><div class="card"><div class="card-header"><h3 class="card-title">Kateqoriya sayları</h3></div>'+
+    '<div class="table-responsive"><table class="table table-vcenter card-table"><thead><tr>'+
+    '<th>Kateqoriya</th><th class="text-end">2025</th><th class="text-end">2026</th><th class="text-end">Fərq</th><th></th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table></div></div></div>'+cmp+beta+'</div>';
+})();
+
+/* ═══ TƏKLİFLƏR ═══ */
+(function(){
+  var P=[
+   ["Yol şəbəkəsi məsafəsi","Bütün məsafələr quş uçuşudur; dəniz, dəmiryolu, çevrə yolu modelləşdirilmir. Məktəbin küçənin o tayında və ya dəmiryolunun o tayında olması eyni bal verir.","OSM yol şəbəkəsi ilə yerli yönləndirmə. Google API bu həcmdə həm bahalı, həm sürət limitli — yalnız tək nöqtə hesabatı üçün mənalı.","prd"],
+   ["POI keyfiyyət çəkisi","5 ulduzlu otel ilə kiçik qonaq evi eyni sayılır. OpenStreetMap yoxlandı: otellərin yalnız %5-ində ulduz məlumatı var.","Bu seyrəklikdə çəkiləndirmə sıralamanı düzəltmir, sistematik sapma yaradır. İş ortağından əlavə sahə lazımdır.","blk"],
+   ["Yeniləmənin avtomatlaşdırılması","İki versiya arasında 14 ay var. Ticarət mərkəzi %22, idman zalı %21 artıb — 14 aylıq dövr bu sürəti tutmur.","Üç kademe: fayl izləmə (bir həftə), qismən avtomatik toplama, aylıq izləmə. Birinci kademe ən böyük qazancı verir.",""],
+   ["Kalibrləmə prioriteti","18 katsayının hamısına eyni əməyi vermək gərəksiz. Ölçüldü: metro katsayısı iki qat artsa belə hüceyrələrin yalnız %1.5-i oynayır.","Kalibrləmə datası gələndə əvvəl muzey, bar, park, abidə və teatra baxılmalı — onlar %55-85 oynadır.",""],
+   ["Qalıq bal","Yeddi indeksin fərqliliyinin %78-i tək amildir. «Təhsil 9, yemək 9, əyləncə 9» əlavə məlumat vermir.","Ortaq amili çıxarıb qalıq göstərmək: «bu nöqtənin təhsili, yerləşməsinə görə gözləniləndən yaxşıdır».","prd"]
+  ];
+  $("v-pr").innerHTML='<div class="alert alert-info mb-3">Bu maddələr iş ortağından gəlmədi — işləmə zamanı ortaya çıxdı və <strong>bizim təklifimiz</strong> olaraq sunulur. Təhlükəsizlik indeksi də belədir: kamera və yanğından mühafizə 2023 sistemində yox idi, yalnız 2026 datasında gəldi.</div>'+
+   '<div class="row row-deck row-cards">'+P.map(function(p){
+     return '<div class="col-lg-6"><div class="card q '+p[3]+'"><div class="card-body">'+
+       '<h3 class="card-title mb-2">'+p[0]+'</h3>'+
+       '<p class="text-secondary mb-2" style="font-size:13px">'+p[1]+'</p>'+
+       '<div class="bg-ug-soft p-2 rounded" style="font-size:12.5px">'+p[2]+'</div>'+
+       '</div></div></div>';}).join("")+'</div>';
+})();
+
+show("ov");
+})();
+</script>
