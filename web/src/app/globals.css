@@ -1,0 +1,174 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Homora.ai — design tokens
+   Light theme is default. `<html data-theme="dark">` flips to dark.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root,
+[data-theme="light"] {
+  /* shadcn-style tokens (kept for compatibility with existing ui/* primitives) */
+  --background: 220 24% 98%;
+  --foreground: 222 25% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 25% 10%;
+  --muted: 220 16% 95%;
+  --muted-foreground: 220 10% 42%;
+  --primary: 24 86% 53%;           /* Homora brand orange #EE701E */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 16% 95%;
+  --secondary-foreground: 222 25% 10%;
+  --accent: 24 86% 53%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 78% 58%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 14% 90%;
+  --input: 220 14% 90%;
+  --ring: 24 86% 53%;
+  --radius: 0.625rem;
+
+  /* Resolved surface aliases. The prototype stylesheets (.hm-val, .hm-v3) use
+     token names that collide with the shell's (--bg / --card / --border), so
+     they cannot reference those directly — `--card: hsl(var(--card))` is
+     self-referential and the browser drops it. These differently-named
+     aliases give those sheets one source of truth for the app's surfaces. */
+  --app-bg: hsl(220 24% 98%);
+  --app-surface: hsl(0 0% 100%);
+  --app-surface-2: hsl(220 16% 97%);
+  --app-line: hsl(220 14% 90%);
+  --app-line-strong: hsl(220 14% 82%);
+  --app-text: hsl(222 25% 10%);
+  --app-text-2: hsl(220 10% 42%);
+  --app-text-3: hsl(220 10% 55%);
+
+  /* Homora brand palette — orange scale around #EE701E (logo colour). */
+  --brand-50:  #fef3ea;
+  --brand-100: #fbdfc7;
+  --brand-200: #f8c39b;
+  --brand-300: #f4a066;
+  --brand-400: #f18640;
+  --brand-500: #ee701e;
+  --brand-600: #d65f14;
+  --brand-700: #b24e12;
+  --brand-800: #8f4013;
+  --brand-900: #822b11;
+  --brand-950: #4a1808;
+
+  --surface:        #ffffff;
+  --surface-alt:    #fafafa;
+  --surface-line:   #e5e7eb;
+  --ink-50:         #f9fafb;
+  --ink-100:        #f3f4f6;
+  --ink-200:        #e5e7eb;
+  --ink-300:        #d1d5db;
+  --ink-400:        #9ca3af;
+  --ink-500:        #6b7280;
+  --ink-600:        #4b5563;
+  --ink-700:        #374151;
+  --ink-800:        #1f2937;
+  --ink-900:        #111827;
+
+  --ok-50:    #ecfdf5;
+  --ok-500:   #10b981;
+  --warn-50:  #fffbeb;
+  --warn-500: #f59e0b;
+  --err-50:   #fef2f2;
+  --err-500:  #ef4444;
+
+  --sh-1: 0 1px 2px rgba(17, 24, 39, 0.04), 0 1px 1px rgba(17, 24, 39, 0.03);
+  --sh-2: 0 4px 12px rgba(17, 24, 39, 0.06), 0 1px 2px rgba(17, 24, 39, 0.04);
+  --sh-3: 0 18px 40px rgba(17, 24, 39, 0.10), 0 4px 12px rgba(17, 24, 39, 0.05);
+}
+
+[data-theme="dark"] {
+  /* Dark values of the surface aliases (see :root for why these exist). */
+  --app-bg: hsl(222 28% 7%);
+  --app-surface: hsl(222 22% 11%);
+  --app-surface-2: hsl(222 18% 16%);
+  --app-line: hsl(222 18% 20%);
+  --app-line-strong: hsl(222 18% 30%);
+  --app-text: hsl(220 14% 96%);
+  --app-text-2: hsl(220 10% 64%);
+  --app-text-3: hsl(220 10% 50%);
+
+  --background: 222 28% 7%;
+  --foreground: 220 14% 96%;
+  --card: 222 22% 11%;
+  --card-foreground: 220 14% 96%;
+  --muted: 222 18% 16%;
+  --muted-foreground: 220 10% 64%;
+  --primary: 24 88% 62%;           /* Homora orange, lightened for dark */
+  --primary-foreground: 222 28% 7%;
+  --secondary: 222 18% 16%;
+  --secondary-foreground: 220 14% 96%;
+  --accent: 24 88% 62%;
+  --accent-foreground: 28 30% 8%;
+  --destructive: 0 78% 64%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 222 18% 20%;
+  --input: 222 18% 20%;
+  --ring: 24 88% 62%;
+
+  --surface:        #15171f;
+  --surface-alt:    #1a1d27;
+  --surface-line:   #2a2e3a;
+  --ink-50:         #1a1d27;
+  --ink-100:        #232733;
+  --ink-200:        #2a2e3a;
+  --ink-300:        #3a3f4d;
+  --ink-400:        #6b7280;
+  --ink-500:        #9ca3af;
+  --ink-600:        #cbd1da;
+  --ink-700:        #e5e7eb;
+  --ink-800:        #f3f4f6;
+  --ink-900:        #ffffff;
+
+  --ok-50:    #052e22;
+  --ok-500:   #10b981;
+  --warn-50:  #2a1d05;
+  --warn-500: #f59e0b;
+  --err-50:   #2a0a0a;
+  --err-500:  #ef4444;
+
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 1px rgba(0, 0, 0, 0.3);
+  --sh-2: 0 4px 12px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sh-3: 0 18px 40px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* MapLibre tweaks shared by both themes */
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right {
+  display: none;
+}
+
+/* Custom scrollbar — subtle, theme-aware */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 999px;
+  border: 2px solid hsl(var(--background));
+}
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
+
+/* Official Homora.ai wordmark (team #4): dark text → white in dark mode. */
+[data-theme="dark"] .app-logo { filter: brightness(0) invert(1); }
