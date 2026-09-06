@@ -207,3 +207,64 @@ bilmediği şey aynı fiyata daha iyisini bulup bulamayacağıdır.
 ### Öneri
 
 Ürün tarafı isterse bir günlük iş. Karar onların.
+
+---
+
+## 6. Dayanacaqta yolun iki yönü
+
+### Durum
+
+`dayanacaq.csv`'de yolun karşılıklı iki yönü ayrı kayıt. 1 846 kaydın hiçbirinde
+isim yok — hepsinin `name` değeri "dayanacaq" — dolayısıyla eşleştirme ancak
+coğrafi olarak kurulabilir.
+
+### Ölçülen
+
+En yakın komşu mesafesi:
+
+| Yüzdelik | Mesafe |
+|---|---|
+| %5 | 21 m |
+| %10 | 27 m |
+| %25 | 44 m |
+| medyan | 87 m |
+
+Belirli bir yarıçapta komşusu olan durak sayısı:
+
+| Yarıçap | Durak | Pay |
+|---|---|---|
+| 20 m | 76 | %4.1 |
+| 30 m | 223 | %12.1 |
+| 50 m | 554 | %30.0 |
+
+Yarıçap büyüdükçe karşılıklı çift olmayan, sadece yakın duran duraklar da
+toplanıyor. 20–30 m aralığı gerçek karşılıklı çiftin tipik genişliği; 50 m'de
+aynı kavşaktaki farklı hatlar da birleşmeye başlıyor.
+
+### Sonuca etkisi
+
+Duraklar birleştirilip `nəqliyyat` indeksi yeniden üretildi:
+
+| Yarıçap | Durak | Bandı değişen hücre | En büyük fark |
+|---|---|---|---|
+| 30 m | 1 846 → 1 735 | %1.9 | 1 bant |
+| 50 m | 1 846 → 1 567 | %4.3 | 1 bant |
+
+### Okunuşu
+
+**Bu soru işi aksatmıyor.** En agresif birleştirmede bile hücrelerin %95.7'si
+yerinde kalıyor ve oynayan hiçbir hücre bir banttan fazla oynamıyor.
+
+Sebebi azalım katsayısının kendisi: `metro` ve `bus` için mesafe eğrisi
+yumuşak, 30 metrelik bir kayma skoru neredeyse hiç değiştirmiyor. Aynı sonuç
+β duyarlılığı ölçümünde de görülmüştü — metro katsayısı iki katına çıksa bile
+hücrelerin yalnızca %1.5'i oynuyordu.
+
+### Öneri
+
+Cevap beklenebilir; bir şeyi bloke etmiyor. Ekip "tek durak sayılsın" derse
+30 metrelik birleştirme uygulanır, maliyeti yarım günlük iş.
+
+Not: karşılıklı iki durağı ayrı saymak savunulabilir bir tercih de olabilir —
+iki yönde de servis olması gerçekten daha iyi bir erişilebilirliktir. Karar
+ürün tarafının.
