@@ -83,6 +83,8 @@ export function IndexMap({ layer, poi, group, mode, poiCategories, groups }: Pro
   const values = mode === "delta" ? layer.deltas[group] : layer.indices[group];
   const hasValues = Array.isArray(values);
 
+  // Hüceyrələr yarı şəffafdır: altdakı küçə və sahil xətti görünməsə
+  // istifadəçi baxdığı yerin harası olduğunu itirir.
   // Fark katmanında ölçek simetrik olmalı, yoksa sıfır nötr renge denk gelmez.
   const spread = hasValues ? Math.max(...values.map((v) => Math.abs(v)), 0.01) : 1;
 
@@ -94,10 +96,10 @@ export function IndexMap({ layer, poi, group, mode, poiCategories, groups }: Pro
     if (mode === "delta") {
       const ratio = Math.abs(value) / spread;
       const rgb = mix(FLAT, value < 0 ? DOWN : UP, ratio);
-      return [rgb[0], rgb[1], rgb[2], 200];
+      return [rgb[0], rgb[1], rgb[2], 185];
     }
     const rgb = sample(BAND_RAMP, (value - 1) / 9);
-    return [rgb[0], rgb[1], rgb[2], 205];
+    return [rgb[0], rgb[1], rgb[2], 178];
   };
 
   const layers: Layer[] = [
