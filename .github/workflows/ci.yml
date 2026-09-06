@@ -54,6 +54,36 @@ jobs:
           print("konfigürasyon şablonu geçerli")
           PY
 
+  web:
+    name: Arayüz
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node kurulumu
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Bağımlılıklar
+        run: npm ci
+        working-directory: web
+
+      - name: Tip kontrolü
+        run: npm run typecheck
+        working-directory: web
+
+      # Derleme, tip kontrolünün yakalamadığı sunucu/istemci ayrımı
+      # hatalarını da yakalar. Panel veriyi çalışma anında çektiği için
+      # derleme ham veri olmadan da geçer.
+      - name: Derleme
+        run: npm run build
+        working-directory: web
+
   hygiene:
     name: Depo hijyeni
     runs-on: ubuntu-latest

@@ -112,3 +112,16 @@ urbangeoai_panel.html
 viz_data.json
 scratch/
 tmp/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Web paneli
+#
+# Panelin okuduğu JSON dosyaları iş ortağının POI koordinatlarını taşır ve
+# `python scripts/build_web_data.py` ile üretilir; depoda tutulmaz.
+# ─────────────────────────────────────────────────────────────────────────────
+web/node_modules/
+web/.next/
+web/out/
+web/public/data/
+web/*.tsbuildinfo
+web/.env.local
