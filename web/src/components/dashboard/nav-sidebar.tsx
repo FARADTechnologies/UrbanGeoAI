@@ -2,6 +2,9 @@
 
 import {
   Activity,
+  BadgeCheck,
+  Database,
+  Plug,
   GitCompareArrows,
   LayoutDashboard,
   Lightbulb,
@@ -18,6 +21,9 @@ import { cn } from "@/lib/utils";
 export type View =
   | "overview"
   | "map"
+  | "enrichment"
+  | "h10"
+  | "api"
   | "indices"
   | "metro"
   | "validation"
@@ -43,11 +49,14 @@ type Props = {
 const ITEMS: Omit<NavItem, "pill">[] = [
   { id: "overview", icon: LayoutDashboard, label: "İcmal" },
   { id: "map", icon: MapIcon, label: "Xəritə" },
+  { id: "enrichment", icon: Database, label: "OSM zənginləşdirmə" },
+  { id: "h10", icon: BadgeCheck, label: "H10 yoxlaması" },
   { id: "indices", icon: Activity, label: "İndekslər" },
   { id: "metro", icon: TrainFront, label: "Metro" },
   { id: "validation", icon: ShieldCheck, label: "Veri denetimi" },
   { id: "change", icon: GitCompareArrows, label: "Dəyişim" },
-  { id: "proposals", icon: Lightbulb, label: "Təkliflər" }
+  { id: "proposals", icon: Lightbulb, label: "Təkliflər" },
+  { id: "api", icon: Plug, label: "API" }
 ];
 
 export function NavSidebar({ active, onChange, collapsed, onToggleCollapsed, badges }: Props) {
