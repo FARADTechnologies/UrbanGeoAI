@@ -19,8 +19,12 @@ export function OverviewView({ summary }: { summary: Summary }) {
     <>
       <KpiGrid
         items={[
-          { label: "Hüceyrə", value: formatCount(meta.cells), note: `H3 res-${meta.resolution}` },
-          { label: "POI", value: formatCount(meta.poi), note: `${meta.categories} kateqoriya` },
+          { label: "Hüceyrə", value: formatCount(meta.cells), note: `hesablama H${meta.resolution}-da` },
+          {
+            label: "Obyekt",
+            value: formatCount(meta.poi),
+            note: `yerli ${formatCount(meta.poiLocal)} + OSM ${formatCount(meta.poiOsm)}`
+          },
           { label: "İndeks", value: String(meta.indices), note: "hamısı çıxışda" },
           {
             label: "Metro",
@@ -49,7 +53,7 @@ export function OverviewView({ summary }: { summary: Summary }) {
             {grown.map((row) => {
               const width = Math.min(100, Math.abs(row.pct) * 3.4);
               return (
-                <div key={row.key} className="grid grid-cols-[132px_1fr_78px] items-center gap-2">
+                <div key={row.key} className="grid grid-cols-[132px_1fr_118px] items-center gap-2">
                   <span className="truncate text-[11.5px] text-muted-foreground">
                     {categoryLabel(row.key)}
                   </span>
@@ -64,6 +68,11 @@ export function OverviewView({ summary }: { summary: Summary }) {
                   </div>
                   <span className="text-right text-[11px] tabular-nums">
                     <span className="text-muted-foreground">{formatCount(row.new)}</span>
+                    {row.osm ? (
+                      <span className="ml-1 text-muted-foreground" title="OpenStreetMap əlavəsi">
+                        +{formatCount(row.osm)}
+                      </span>
+                    ) : null}
                     <span
                       className="ml-1.5 font-semibold"
                       style={{ color: row.pct >= 0 ? "var(--ok-500)" : "var(--err-500)" }}

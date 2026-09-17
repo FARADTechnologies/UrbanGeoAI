@@ -7,7 +7,10 @@ import { NavSidebar, type View } from "@/components/dashboard/nav-sidebar";
 import { TopBar } from "@/components/dashboard/top-bar";
 import { MapPanel } from "@/components/map/map-panel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ApiView } from "@/components/views/api";
 import { ChangeView } from "@/components/views/change";
+import { EnrichmentView } from "@/components/views/enrichment";
+import { H10View } from "@/components/views/h10";
 import { IndicesView } from "@/components/views/indices";
 import { MetroView } from "@/components/views/metro";
 import { OverviewView } from "@/components/views/overview";
@@ -27,6 +30,18 @@ const TITLES: Record<View, { title: string; subtitle: string }> = {
   map: {
     title: "Xəritə",
     subtitle: "H3 hüceyrələri üzərində əlçatanlıq balı, POI qatı və iki sürüm arasındakı fərq"
+  },
+  enrichment: {
+    title: "OSM zənginləşdirmə",
+    subtitle: "Yerli hovuzda olmayan obyektlər OpenStreetMap-dən tapılıb əlavə edildi"
+  },
+  h10: {
+    title: "H10 yoxlaması",
+    subtitle: "Hesablama həqiqətən H10-da aparılırmı və hamısı tamdırmı"
+  },
+  api: {
+    title: "API",
+    subtitle: "Bu sistemi başqa sistemlərə bağlayan xidmət"
   },
   indices: {
     title: "İndekslər",
@@ -54,7 +69,7 @@ export default function Page() {
   const [view, setView] = useState<View>("overview");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [poi, setPoi] = useState<PoiLayers | null>(null);
-  const [resolution, setResolution] = useState(8);
+  const [resolution, setResolution] = useState(9);
   const [layers, setLayers] = useState<Record<number, CellLayer>>({});
   const [loadingLayer, setLoadingLayer] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -145,7 +160,9 @@ export default function Page() {
                 ? {
                     metro: String(summary.metro.nodes.length),
                     validation: String(summary.validation.length),
-                    indices: String(summary.meta.indices)
+                    indices: String(summary.meta.indices),
+                    enrichment: `+${summary.meta.poiOsm}`,
+                    h10: summary.h10?.all_ok ? "✓" : ""
                   }
                 : undefined
             }
@@ -156,7 +173,8 @@ export default function Page() {
           <TopBar title={heading.title} subtitle={heading.subtitle}>
             {summary ? (
               <span className="hidden flex-shrink-0 rounded-md border px-2.5 py-1 text-[11px] tabular-nums text-muted-foreground md:inline">
-                {formatCount(summary.meta.cells)} hüceyrə · {formatCount(summary.meta.poi)} POI
+                {formatCount(summary.meta.cells)} H10 hüceyrə · {formatCount(summary.meta.poi)} obyekt
+                (OSM +{formatCount(summary.meta.poiOsm)})
               </span>
             ) : null}
           </TopBar>
@@ -179,9 +197,9 @@ export default function Page() {
             ) : view === "map" ? (
               <DashboardCard
                 title="Əlçatanlıq xəritəsi"
-                subtitle="Rəng seçilmiş indeksin balını göstərir; hüceyrənin üstünə gələndə yeddisi də görünür"
+                subtitle="Hesablama H10-da; H7–H9 onun ortalaması. Sürüm seçərək 2025, 2026 və OSM əlavəsindən sonrakı vəziyyəti müqayisə edin"
                 bodyClassName="p-0"
-                className="min-h-[620px] flex-1"
+                className="min-h-[680px] flex-1"
               >
                 <MapPanel
                   layer={layers[resolution] ?? null}
@@ -193,6 +211,12 @@ export default function Page() {
                   loading={loadingLayer}
                 />
               </DashboardCard>
+            ) : view === "enrichment" ? (
+              <EnrichmentView summary={summary} />
+            ) : view === "h10" ? (
+              <H10View summary={summary} />
+            ) : view === "api" ? (
+              <ApiView />
             ) : view === "indices" ? (
               <IndicesView summary={summary} />
             ) : view === "metro" ? (

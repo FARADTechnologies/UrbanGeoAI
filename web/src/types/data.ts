@@ -12,8 +12,10 @@ export type PcaInfo = {
   members: string[];
   /** İlk bileşenin açıkladığı varyans yüzdesi. */
   evr: number;
-  /** Bileşen yükleri — üye sırasıyla. */
+  /** Ekibin notebook'undaki tanım: ağırlık × √özdeğer (= skor–indeks korelasyonu). */
   loadings: number[];
+  /** Puanlamada kullanılan ham ağırlık (birim vektör). */
+  weights: number[];
   /** Bant numarasından hücre sayısına. Boş bant burada 0 görünür. */
   bands: Record<string, number>;
   /** Model önceki veri sürümüne mi uyduruldu. */
@@ -72,6 +74,43 @@ export type CategoryCount = {
   new: number;
   /** Önceki sürümde karşılığı yoksa null. */
   old: number | null;
+  /** OpenStreetMap'ten eklenen. */
+  osm: number;
+};
+
+export type EnrichmentRow = {
+  category: string;
+  local: number;
+  osm: number;
+  filtered: number;
+  matched: number;
+  added: number;
+  total: number;
+  growth_pct: number;
+};
+
+export type Enrichment = {
+  generated: string;
+  osm_elements: number;
+  inside_boundary: number;
+  after_dedupe: number;
+  after_rules: number;
+  rejected_by_reason: Record<string, number>;
+  match_radius_m: Record<string, number>;
+  categories: EnrichmentRow[];
+  totals: { local: number; osm: number; matched: number; added: number };
+};
+
+export type H10Check = { name: string; ok: boolean; detail: string };
+
+export type H10Verification = {
+  rows: number;
+  columns: number;
+  groups: string[];
+  checks: H10Check[];
+  all_ok: boolean;
+  levels: { res: number; role: string; cells: number; what: string }[];
+  original_resolution: number;
 };
 
 export type BetaRow = {
@@ -93,6 +132,9 @@ export type Summary = {
     resolution: number;
     mapResolutions: number[];
     bbox: number[];
+    poiLocal: number;
+    poiOsm: number;
+    versions: { key: string; label: string }[];
   };
   groups: string[];
   pca: Record<string, PcaInfo>;
@@ -106,6 +148,8 @@ export type Summary = {
   counts: CategoryCount[];
   comparison: Comparison | null;
   beta: Record<string, BetaRow> | null;
+  enrichment: Enrichment | null;
+  h10: H10Verification | null;
   decay: Record<string, number>;
   retired: Record<string, string>;
 };
@@ -114,9 +158,15 @@ export type Summary = {
 export type CellLayer = {
   res: number;
   h3: string[];
-  indices: Record<string, number[]>;
-  deltas: Record<string, number[]>;
+  /** Sürüm → indeks → bal dizisi. H10'da tam sayı, üst seviyelerde ortalama. */
+  v: Record<string, Record<string, number[]>>;
 };
 
-/** Kategori adından [enlem, boylam] listesine. */
-export type PoiLayers = Record<string, [number, number][]>;
+export type Points = [number, number][];
+
+/** Sürüm → kategori → [enlem, boylam]. ``osm`` yalnız eklenen nesneler. */
+export type PoiLayers = {
+  "2025": Record<string, Points>;
+  "2026": Record<string, Points>;
+  osm: Record<string, Points>;
+};

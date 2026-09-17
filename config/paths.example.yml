@@ -75,6 +75,12 @@ metro:
   # çalışan bir istasyonu sessizce siler.
   not_operational: []
 
+  # Ekibin işletmede olduğunu teyit ettiği istasyonlar. Bu isimler inşaat
+  # etiketi ve servis noktası kontrollerinden muaftır. Örnek: Xocəsən hem
+  # depo hem yolcu istasyonudur, adındaki "Depo" onu servis noktası
+  # gösteriyordu.
+  operational: []
+
   # Aktarma kompleksleri tek erişim noktası sayılsın mı?
   # Yolcu için tek yapıdır; iki kez saymak o noktanın ulaşım puanını şişirir.
   #

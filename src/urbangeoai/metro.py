@@ -158,6 +158,7 @@ def deduplicate(
     records: list[dict],
     not_operational: tuple[str, ...] = (),
     merge_interchanges: bool = True,
+    operational: tuple[str, ...] = (),
     duplicate_radius_m: float = DUPLICATE_RADIUS_M,
     interchange_radius_m: float = INTERCHANGE_RADIUS_M,
 ) -> MetroReport:
@@ -171,6 +172,10 @@ def deduplicate(
             baştaki sondaki boşluktan bağımsızdır.
         merge_interchanges: True ise birbirine yakın farklı isimli istasyonlar
             tek erişim noktası sayılır ve ilki tutulur.
+        operational: Ekibin işletmede olduğunu teyit ettiği istasyonlar. Bu
+            isimler inşaat etiketi, servis noktası ve işletme dışı listesi
+            kontrollerinden muaftır. Örnek: Xocəsən hem depo hem yolcu
+            istasyonu; adındaki "Depo" yüzünden servis noktası sanılıyordu.
         duplicate_radius_m: Aynı isimli iki kaydın tekrar sayılacağı mesafe.
         interchange_radius_m: Farklı isimli iki istasyonun aktarma kompleksi
             sayılacağı mesafe.
@@ -185,6 +190,7 @@ def deduplicate(
         aktarma kompleksi sanmayız.
     """
     normalised = {normalise_name(n) for n in not_operational}
+    confirmed = {normalise_name(n) for n in operational}
     report = MetroReport()
 
     # 1. Adım: isimsiz, servis ve işletme dışı düğümleri ayır.
@@ -202,6 +208,10 @@ def deduplicate(
                     reason="düğümün adı yok, istasyon olarak doğrulanamıyor",
                 )
             )
+            continue
+
+        if normalise_name(name) in confirmed:
+            candidates.append({**node, "name": name, "_confirmed": True})
             continue
 
         construction = has_construction_tag(node)
@@ -319,7 +329,26 @@ def deduplicate(
                 lat=node["lat"],
                 lon=node["lon"],
                 decision=Decision.KEEP,
-                reason="işletmedeki istasyon",
+                reason=(
+                    "ekip işletmede olduğunu teyit etti"
+                    if node.get("_confirmed")
+                    else "işletmedeki istasyon"
+                ),
             )
         )
     return report
+
+
+def deduplicate_with_config(records: list[dict], metro_config: dict) -> MetroReport:
+    """Konfigürasyondaki ``metro`` bölümüyle ``deduplicate`` çağırır.
+
+    Bütün betikler aynı listeleri aynı şekilde geçirsin diye tek yerde
+    toplandı; bir betik listeyi unutursa kapalı bir istasyon sessizce geri
+    gelirdi.
+    """
+    return deduplicate(
+        records,
+        not_operational=tuple(metro_config.get("not_operational", ()) or ()),
+        operational=tuple(metro_config.get("operational", ()) or ()),
+        merge_interchanges=bool(metro_config.get("merge_interchanges", True)),
+    )

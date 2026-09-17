@@ -74,7 +74,7 @@ def load_category(name: str, base: Path, sources: dict, settings) -> pd.DataFram
             mirrors=settings.overpass_mirrors or osm.DEFAULT_MIRRORS,
         )
         payload = client.query(osm.metro_query(settings.bbox), "metro_raw")
-        return metro.deduplicate(osm.nodes_to_records(payload)).frame()
+        return metro.deduplicate_with_config(osm.nodes_to_records(payload), settings.metro).frame()
     fname, typ = sources[name]
     frame = io.read_poi(base / fname).frame
     return io.filter_type(frame, typ) if typ else frame

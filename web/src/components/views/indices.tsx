@@ -24,6 +24,14 @@ export function IndicesView({ summary }: { summary: Summary }) {
           title="Bileşen yükleri və bant doluluğu"
           subtitle="Hər indeks öz kateqoriyalarının ilk əsas bileşeni"
         >
+          <div className="mb-3 rounded-lg border border-dashed px-3 py-2.5 text-[11.5px] leading-relaxed text-muted-foreground">
+            <b className="text-foreground">Kateqoriya yanındakı rəqəm</b> — o kateqoriyanın skoru ilə
+            indeks arasındakı korelyasiya (ekibin notebook-undakı tərif:{" "}
+            <span className="font-mono">components × √explained_variance</span>). 1-ə yaxın = indeksi
+            güclü müəyyən edir. Hesablama: skorlar standartlaşdırılır →{" "}
+            <span className="font-mono">PCA(n_components=1)</span> → birinci komponent. Kod:{" "}
+            <span className="font-mono">src/urbangeoai/indices.py · fit_group</span>
+          </div>
           <div className="space-y-3">
             {groups.map((g) => {
               const info = summary.pca[g];
@@ -45,7 +53,7 @@ export function IndicesView({ summary }: { summary: Summary }) {
                       <span
                         key={m}
                         className="rounded-md border px-2 py-0.5 text-[11px]"
-                        title={`yük ${info.loadings[i]}`}
+                        title={`korelyasiya ${info.loadings[i]} · puanlama çəkisi ${info.weights?.[i] ?? "—"}`}
                       >
                         {categoryLabel(m)}
                         <span className="ml-1.5 font-semibold tabular-nums text-[var(--brand-600)]">
