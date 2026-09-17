@@ -299,3 +299,26 @@ def test_manual_list_still_works_for_untagged_stations():
     report = metro.deduplicate(records, not_operational=("Kapalı İstasyon",))
     assert report.kept == []
     assert "konfigürasyondaki" in report.records[0].reason
+
+
+def test_confirmed_station_survives_the_depot_rule():
+    """Xocəsən hem depo hem istasyon; adındaki "Depo" onu silmemeli."""
+    records = [
+        {"osm_id": 1, "name": "Xocəsən Depo Metro", "lat": 40.41, "lon": 49.79, "tags": {}},
+        {"osm_id": 2, "name": "Dərnəgül deposu", "lat": 40.43, "lon": 49.86, "tags": {}},
+    ]
+    report = metro.deduplicate(records, operational=("Xocəsən Depo Metro",))
+    kept = {r.name: r for r in report.kept}
+    assert set(kept) == {"Xocəsən Depo Metro"}
+    assert "teyit" in kept["Xocəsən Depo Metro"].reason
+
+
+def test_config_helper_passes_every_list():
+    records = [
+        {"osm_id": 1, "name": "Y15", "lat": 40.37, "lon": 49.91, "tags": {}},
+        {"osm_id": 2, "name": "Xocəsən Depo Metro", "lat": 40.41, "lon": 49.79, "tags": {}},
+    ]
+    report = metro.deduplicate_with_config(
+        records, {"not_operational": ["Y15"], "operational": ["Xocəsən Depo Metro"]}
+    )
+    assert [r.name for r in report.kept] == ["Xocəsən Depo Metro"]

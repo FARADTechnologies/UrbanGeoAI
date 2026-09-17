@@ -66,8 +66,9 @@ def main() -> int:
     client = osm.OverpassClient(
         cache_dir=settings.paths.cache, mirrors=settings.overpass_mirrors or osm.DEFAULT_MIRRORS
     )
-    pois["metro"] = metro.deduplicate(
-        osm.nodes_to_records(client.query(osm.metro_query(settings.bbox), "metro_raw"))
+    pois["metro"] = metro.deduplicate_with_config(
+        osm.nodes_to_records(client.query(osm.metro_query(settings.bbox), "metro_raw")),
+        settings.metro,
     ).frame()
 
     print(f"ızgara {len(cells):,} hücre · {len(pois)} kategori\n")

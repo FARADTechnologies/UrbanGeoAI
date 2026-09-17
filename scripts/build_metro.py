@@ -59,6 +59,7 @@ def main() -> int:
     report = metro.deduplicate(
         records,
         not_operational=tuple(rules.get("not_operational", ())),
+        operational=tuple(rules.get("operational", ()) or ()),
         merge_interchanges=not args.no_merge and bool(rules.get("merge_interchanges", True)),
         duplicate_radius_m=float(rules.get("duplicate_radius_m", metro.DUPLICATE_RADIUS_M)),
         interchange_radius_m=float(rules.get("interchange_radius_m", metro.INTERCHANGE_RADIUS_M)),
