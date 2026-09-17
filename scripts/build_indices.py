@@ -14,9 +14,14 @@ bir hücrenin balı yalnızca kendi çevresi değiştiyse oynar.
 **Bütün indeksler.** Yedi indeksin hepsi çıktıda; hangisinin gösterileceği
 ürün kararıdır, veri katmanı hepsini üretir.
 
+**OpenStreetMap eklemeleri.** ``scripts/enrich_osm.py`` çalıştırılmışsa,
+yerel havuzda olmayan nesneler güncel veriye katılır. ``--no-osm`` ile
+yalnız yerel veri kullanılır.
+
 Kullanım:
     python scripts/build_indices.py
     python scripts/build_indices.py --fit-on previous   # modeli 2025'e uydur
+    python scripts/build_indices.py --no-osm            # OSM eklemeleri olmadan
     python scripts/build_indices.py --out yol/
 """
 
@@ -39,9 +44,7 @@ from urbangeoai import (  # noqa: E402
     console,
     grid,
     indices,
-    io,
-    metro,
-    osm,
+    pipeline,
     scoring,
 )
 
@@ -50,37 +53,14 @@ from urbangeoai import (  # noqa: E402
 PARENT_RESOLUTIONS = (6, 7, 8)
 
 
-def load_pois(base: Path, settings, sources: dict) -> dict[str, pd.DataFrame]:
-    """Katalogdaki bütün kategorileri yükler. Metro OpenStreetMap'ten gelir."""
-    out: dict[str, pd.DataFrame] = {}
-    for name, (fname, typ) in sources.items():
-        path = base / fname
-        if not path.exists():
-            print(f"  atlandı (dosya yok): {fname}", file=sys.stderr)
-            continue
-        frame = io.read_poi(path).frame
-        out[name] = io.filter_type(frame, typ) if typ else frame
-
-    client = osm.OverpassClient(
-        cache_dir=settings.paths.cache,
-        mirrors=settings.overpass_mirrors or osm.DEFAULT_MIRRORS,
-    )
-    report = metro.deduplicate(
-        osm.nodes_to_records(client.query(osm.metro_query(settings.bbox), "metro_raw")),
-        not_operational=tuple(settings.metro.get("not_operational", ())),
-        merge_interchanges=bool(settings.metro.get("merge_interchanges", True)),
-    )
-    out["metro"] = report.frame()
-    return out
+def load_pois(base: Path, settings, sources: dict, additions=None) -> dict[str, pd.DataFrame]:
+    """Bir veri sürümünün havuzu. Metro OpenStreetMap'ten gelir."""
+    return pipeline.load_pool(base, sources, pipeline.load_metro(settings).frame(), additions)
 
 
 def category_scores(cells: pd.DataFrame, pois: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """Her kategori için mesafeye göre azalan skor."""
-    columns = {
-        f"{name}_score": scoring.decay_score(cells, frame, catalogue.DECAY[name])
-        for name, frame in pois.items()
-    }
-    return pd.DataFrame(columns, index=cells.index)
+    return pipeline.category_scores(cells, pois)
 
 
 def main() -> int:
@@ -95,6 +75,7 @@ def main() -> int:
         help="Modelin uydurulacağı veri sürümü (varsayılan: previous)",
     )
     parser.add_argument("--out", type=Path, help="Çıktı dizini")
+    parser.add_argument("--no-osm", action="store_true", help="OpenStreetMap eklemelerini kullanma")
     args = parser.parse_args()
 
     started = time.time()
@@ -113,16 +94,15 @@ def main() -> int:
     cells = grid.land_cells(settings.bbox, settings.h3_resolution, boundary)
     print(f"ızgara: {len(cells):,} hücre (res-{settings.h3_resolution})")
 
+    additions = None if args.no_osm else pipeline.load_additions(settings)
+    if additions is not None:
+        print(f"OpenStreetMap eklemeleri: {len(additions):,} nesne havuza katılıyor")
+    else:
+        print("OpenStreetMap eklemeleri kullanılmıyor")
+
     print("güncel veri puanlanıyor…")
-    current = pd.concat(
-        [
-            cells,
-            category_scores(
-                cells, load_pois(settings.paths.raw_current, settings, catalogue.SOURCES)
-            ),
-        ],
-        axis=1,
-    )
+    pois_current = load_pois(settings.paths.raw_current, settings, catalogue.SOURCES, additions)
+    current = pd.concat([cells, category_scores(cells, pois_current)], axis=1)
 
     # Model varsayılan olarak önceki sürüme uydurulur. Böylece güncel verideki
     # hareket, referans çerçevesinin kayması değil gerçek bir değişimdir.
@@ -169,7 +149,6 @@ def main() -> int:
         )
 
     print("en yakın nesne mesafeleri…")
-    pois_current = load_pois(settings.paths.raw_current, settings, catalogue.SOURCES)
     for name, radius in catalogue.SERVICE_RADIUS_M.items():
         if name not in pois_current:
             continue
@@ -200,6 +179,7 @@ def main() -> int:
         model_path,
         metadata={
             "fitted_on": basis_label,
+            "osm_additions": 0 if additions is None else int(len(additions)),
             "grid_cells": int(len(cells)),
             "h3_resolution": settings.h3_resolution,
             "bbox": list(settings.bbox),
