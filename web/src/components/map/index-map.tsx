@@ -1,9 +1,10 @@
 "use client";
 
-import type { Layer } from "@deck.gl/core";
+import type { Layer, PickingInfo } from "@deck.gl/core";
 import { H3HexagonLayer } from "@deck.gl/geo-layers";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import DeckGL from "@deck.gl/react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Map from "react-map-gl/maplibre";
 
 import { useTheme } from "@/components/theme-provider";
@@ -94,9 +95,16 @@ function fmt(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+/** H10 hüceyrə sərhədləri bu yaxınlaşmadan sonra çəkilir; uzaqdan baxanda xətt
+ *  sıxlığı xəritəni boğur, yaxından baxanda isə sərhədsiz eyni rəngli hüceyrələr
+ *  tək bir ləkəyə çevrilir. */
+const EDGE_ZOOM = 12.5;
+
 export function IndexMap({ layer, group, mode, version, compare, pois, groups }: Props) {
   const { theme } = useTheme();
   const isBase = layer.res >= 10;
+  const tipRef = useRef<HTMLDivElement>(null);
+  const [zoomedIn, setZoomedIn] = useState(false);
 
   const [from, to] = compare;
   const bandValues = layer.v[version]?.[group];
@@ -112,7 +120,9 @@ export function IndexMap({ layer, group, mode, version, compare, pois, groups }:
     spread = max;
   }
 
-  const rows = layer.h3.map((h3, i) => ({ h3, i }));
+  // 120 min obyektin hər render-də yenidən yaradılması deck.gl-i bütün qatı
+  // yenidən hesablamağa məcbur edirdi.
+  const rows = useMemo(() => layer.h3.map((h3, i) => ({ h3, i })), [layer]);
 
   // Hüceyrələr yarı şəffafdır: altdakı küçə və sahil xətti görünməsə
   // istifadəçi baxdığı yerin harası olduğunu itirir.
@@ -135,15 +145,20 @@ export function IndexMap({ layer, group, mode, version, compare, pois, groups }:
       data: rows,
       pickable: true,
       filled: true,
-      // H10'da 120 bin sınır çizgisi haritayı boğar ve yavaşlatır.
-      stroked: !isBase,
+      // H10-da sərhəd yalnız yaxından çəkilir.
+      stroked: !isBase || zoomedIn,
       extruded: false,
       highPrecision: isBase ? false : true,
       getHexagon: (d: { h3: string }) => d.h3,
       getFillColor: (d: { i: number }) => colorFor(d.i),
-      getLineColor: theme === "dark" ? [255, 255, 255, 40] : [15, 23, 42, 30],
+      getLineColor: theme === "dark" ? [255, 255, 255, 45] : [15, 23, 42, 45],
+      lineWidthUnits: "pixels",
+      getLineWidth: 1,
       lineWidthMinPixels: 0.5,
-      updateTriggers: { getFillColor: [group, mode, version, from, to, layer.res] }
+      updateTriggers: {
+        getFillColor: [group, mode, version, from, to, layer.res],
+        getLineColor: [theme]
+      }
     })
   ];
 
@@ -169,72 +184,104 @@ export function IndexMap({ layer, group, mode, version, compare, pois, groups }:
     );
   }
 
-  return (
-    <DeckGL
-      initialViewState={INITIAL_VIEW_STATE}
-      controller
-      layers={layers}
-      getTooltip={({ object, layer: hit }) => {
-        if (!object) return null;
-        const id = hit?.id ?? "";
-        if (id.startsWith("poi-")) {
-          const [, kind, ...rest] = id.split("-");
-          const name = rest.join("-");
-          return tooltipCard(
-            `<div style="font-weight:600">${escapeHtml(categoryLabel(name))}</div>
-             <div style="opacity:.7">${kind === "osm" ? "OpenStreetMap-dən əlavə" : "iş ortağının verisi"}</div>`
-          );
-        }
-        const row = object as { h3: string; i: number };
-        const shown = mode === "delta" ? to : version;
-        const lines = groups
-          .map((g) => {
-            const now = layer.v[shown]?.[g]?.[row.i];
-            if (now === undefined) return "";
-            const prev = layer.v[from]?.[g]?.[row.i];
-            const delta = mode === "delta" && prev !== undefined ? now - prev : 0;
-            const shift =
-              Math.abs(delta) < 0.005
-                ? ""
-                : `<span style="color:${delta < 0 ? "#f87171" : "#4ade80"};margin-left:6px">${
-                    delta > 0 ? "+" : ""
-                  }${fmt(delta)}</span>`;
-            const strong = g === group ? "font-weight:700;" : "";
-            return `<div style="display:flex;justify-content:space-between;gap:14px;${strong}">
-              <span>${escapeHtml(groupLabel(g))}</span>
-              <span>${fmt(now)}${shift}</span>
-            </div>`;
-          })
-          .join("");
-        const label =
-          mode === "delta"
-            ? `${VERSION_LABELS[from]} → ${VERSION_LABELS[to]}`
-            : VERSION_LABELS[version];
-        return tooltipCard(
-          `<div style="font-family:ui-monospace,monospace;font-size:11px;opacity:.65">${escapeHtml(
-            row.h3
-          )} · H${layer.res}</div>
-          <div style="font-size:11px;opacity:.65;margin-bottom:6px">${escapeHtml(label)}${
-            isBase ? "" : " · H10 ortalaması"
-          }</div>${lines}${hasDelta || mode !== "delta" ? "" : "<div>müqayisə yoxdur</div>"}`
+  const describe = useCallback(
+    ({ object, layer: hit }: PickingInfo): string | null => {
+      if (!object) return null;
+      const id = hit?.id ?? "";
+      if (id.startsWith("poi-")) {
+        const [, kind, ...rest] = id.split("-");
+        const name = rest.join("-");
+        return (
+          `<div style="font-weight:600">${escapeHtml(categoryLabel(name))}</div>
+           <div style="opacity:.7">${kind === "osm" ? "OpenStreetMap-dən əlavə" : "iş ortağının verisi"}</div>`
         );
-      }}
-    >
-      <Map reuseMaps mapStyle={theme === "dark" ? MAP_STYLE_DARK : MAP_STYLE_LIGHT} />
-    </DeckGL>
+      }
+      const row = object as { h3: string; i: number };
+      const shown = mode === "delta" ? to : version;
+      const lines = groups
+        .map((g) => {
+          const now = layer.v[shown]?.[g]?.[row.i];
+          if (now === undefined) return "";
+          const prev = layer.v[from]?.[g]?.[row.i];
+          const delta = mode === "delta" && prev !== undefined ? now - prev : 0;
+          const shift =
+            Math.abs(delta) < 0.005
+              ? ""
+              : `<span style="color:${delta < 0 ? "#f87171" : "#4ade80"};margin-left:6px">${
+                  delta > 0 ? "+" : ""
+                }${fmt(delta)}</span>`;
+          const strong = g === group ? "font-weight:700;" : "";
+          return `<div style="display:flex;justify-content:space-between;gap:14px;${strong}">
+            <span>${escapeHtml(groupLabel(g))}</span>
+            <span>${fmt(now)}${shift}</span>
+          </div>`;
+        })
+        .join("");
+      const label =
+        mode === "delta"
+          ? `${VERSION_LABELS[from]} → ${VERSION_LABELS[to]}`
+          : VERSION_LABELS[version];
+      return (
+        `<div style="font-family:ui-monospace,monospace;font-size:11px;opacity:.65">${escapeHtml(
+          row.h3
+        )} · H${layer.res}</div>
+        <div style="font-size:11px;opacity:.65;margin-bottom:6px">${escapeHtml(label)}${
+          isBase ? "" : " · H10 ortalaması"
+        }</div>${lines}${hasDelta || mode !== "delta" ? "" : "<div>müqayisə yoxdur</div>"}`
+      );
+    },
+    [layer, group, mode, version, from, to, groups, isBase, hasDelta]
+  );
+
+  // deck.gl 9.4-ün öz ipucu qutusu kartın hündürlüyü qədər yuxarıda yerləşirdi;
+  // ona görə yalnız xəritənin aşağı hissəsində görünürdü. Qutu burada çəkilir,
+  // koordinat birbaşa kətana nisbətdir və kənara çıxanda o biri tərəfə keçir.
+  const onHover = useCallback(
+    (info: PickingInfo) => {
+      const el = tipRef.current;
+      if (!el) return;
+      const html = info.object ? describe(info) : null;
+      if (!html) {
+        el.style.display = "none";
+        return;
+      }
+      el.innerHTML = html;
+      el.style.display = "block";
+      const parent = el.parentElement;
+      const pw = parent?.clientWidth ?? 0;
+      const ph = parent?.clientHeight ?? 0;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      let x = info.x + 14;
+      let y = info.y + 14;
+      if (x + w > pw - 8) x = info.x - w - 14;
+      if (y + h > ph - 8) y = info.y - h - 14;
+      el.style.transform = `translate(${Math.max(8, x)}px, ${Math.max(8, y)}px)`;
+    },
+    [describe]
+  );
+
+  return (
+    <>
+      <DeckGL
+        initialViewState={INITIAL_VIEW_STATE}
+        controller
+        layers={layers}
+        onHover={onHover}
+        onViewStateChange={({ viewState }) => {
+          if (tipRef.current) tipRef.current.style.display = "none";
+          const near = (viewState as { zoom: number }).zoom >= EDGE_ZOOM;
+          if (near !== zoomedIn) setZoomedIn(near);
+        }}
+      >
+        <Map reuseMaps mapStyle={theme === "dark" ? MAP_STYLE_DARK : MAP_STYLE_LIGHT} />
+      </DeckGL>
+      <div
+        ref={tipRef}
+        className="pointer-events-none absolute left-0 top-0 z-20 hidden rounded-lg border border-white/10 bg-[#10161f]/95 p-2.5 text-[12px] text-[#f5f7fb] shadow-lg"
+        style={{ minWidth: 200, maxWidth: 280 }}
+      />
+    </>
   );
 }
 
-function tooltipCard(html: string) {
-  return {
-    html: `<div style="min-width:200px">${html}</div>`,
-    style: {
-      backgroundColor: "rgba(16, 22, 31, 0.96)",
-      border: "1px solid rgba(255,255,255,0.12)",
-      borderRadius: "8px",
-      color: "#f5f7fb",
-      fontSize: "12px",
-      padding: "10px"
-    }
-  };
-}
