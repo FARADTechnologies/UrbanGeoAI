@@ -7,7 +7,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "UrbanGeoAI — Əlçatanlıq indeksləri",
   description:
-    "Bakı və Abşeron üçün H3 şəbəkəsi üzərində əlçatanlıq indeksləri: təhsil, nəqliyyat, turizm, yemək, istirahət, əyləncə və təhlükəsizlik."
+    "Bakı və Abşeron üçün H3 şəbəkəsi üzərində əlçatanlıq indeksləri: təhsil, nəqliyyat, turizm, yemək, istirahət, əyləncə və təhlükəsizlik.",
+  // Panel iş ortağının verisini göstərir; axtarış motorlarına düşməsin.
+  robots: { index: false, follow: false }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

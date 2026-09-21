@@ -126,3 +126,6 @@ web/out/
 web/public/data/
 web/*.tsbuildinfo
 web/.env.local
+
+# Firebase deploy önbelleği
+.firebase/
