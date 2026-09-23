@@ -11,6 +11,7 @@ import { ApiView } from "@/components/views/api";
 import { ChangeView } from "@/components/views/change";
 import { EnrichmentView } from "@/components/views/enrichment";
 import { H10View } from "@/components/views/h10";
+import { VerificationView } from "@/components/views/verification";
 import { IndicesView } from "@/components/views/indices";
 import { MetroView } from "@/components/views/metro";
 import { OverviewView } from "@/components/views/overview";
@@ -38,6 +39,10 @@ const TITLES: Record<View, { title: string; subtitle: string }> = {
   h10: {
     title: "H10 yoxlaması",
     subtitle: "Hesablama həqiqətən H10-da aparılırmı və hamısı tamdırmı"
+  },
+  verification: {
+    title: "Metod yoxlaması",
+    subtitle: "Ekibin nəticəsi ilə müqayisə, 1–10 balın yoxlanması və piyada məsafəsi"
   },
   api: {
     title: "API",
@@ -215,6 +220,8 @@ export default function Page() {
               <EnrichmentView summary={summary} />
             ) : view === "h10" ? (
               <H10View summary={summary} />
+            ) : view === "verification" ? (
+              <VerificationView summary={summary} />
             ) : view === "api" ? (
               <ApiView />
             ) : view === "indices" ? (

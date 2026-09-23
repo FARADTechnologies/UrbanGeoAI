@@ -11,6 +11,12 @@ birleştirsin çalışır; seviye anlaşması beklenmeden teslim edilebilir.
 yazılır. Sonraki veri sürümü bu modelle puanlanır, yeniden sıralanmaz. Böylece
 bir hücrenin balı yalnızca kendi çevresi değiştiyse oynar.
 
+Referans güncel veridir (2026 + OpenStreetMap). Model önceden 2025 verisine
+uyduruluyordu; OSM eklemesi verinin tanımını değiştirince (ör. park 160 → 1 072)
+2026 hücreleri 2025 cetvelinin tavanını aştı ve istirahətdə %28, əyləncədə %31
+hücre 10'a yığıldı (``scripts/check_bands.py``). Yeni referansta her bant
+eşit dolu; 3 ayda bir gelen veri bu modelle ölçülür.
+
 **Bütün indeksler.** Yedi indeksin hepsi çıktıda; hangisinin gösterileceği
 ürün kararıdır, veri katmanı hepsini üretir.
 
@@ -20,7 +26,7 @@ yalnız yerel veri kullanılır.
 
 Kullanım:
     python scripts/build_indices.py
-    python scripts/build_indices.py --fit-on previous   # modeli 2025'e uydur
+    python scripts/build_indices.py --fit-on previous   # modeli 2025'e uydur (eski davranış)
     python scripts/build_indices.py --no-osm            # OSM eklemeleri olmadan
     python scripts/build_indices.py --out yol/
 """
@@ -71,8 +77,8 @@ def main() -> int:
     parser.add_argument(
         "--fit-on",
         choices=["current", "previous"],
-        default="previous",
-        help="Modelin uydurulacağı veri sürümü (varsayılan: previous)",
+        default="current",
+        help="Modelin uydurulacağı veri sürümü (varsayılan: current)",
     )
     parser.add_argument("--out", type=Path, help="Çıktı dizini")
     parser.add_argument("--no-osm", action="store_true", help="OpenStreetMap eklemelerini kullanma")
@@ -104,8 +110,9 @@ def main() -> int:
     pois_current = load_pois(settings.paths.raw_current, settings, catalogue.SOURCES, additions)
     current = pd.concat([cells, category_scores(cells, pois_current)], axis=1)
 
-    # Model varsayılan olarak önceki sürüme uydurulur. Böylece güncel verideki
-    # hareket, referans çerçevesinin kayması değil gerçek bir değişimdir.
+    # Model varsayılan olarak güncel veriye uydurulur ve dondurulur. --fit-on
+    # previous ile 2025'e uydurulabilir; ama OSM eklemeli veride bu, bantları
+    # tavana yığar (bkz. modül açıklaması).
     basis = current
     basis_label = "current"
     if (

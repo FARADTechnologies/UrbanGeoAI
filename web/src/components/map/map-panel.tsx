@@ -25,8 +25,11 @@ const VERSIONS = ["2025", "2026", "2026osm"] as const;
 const COMPARISONS: { key: string; pair: [string, string]; label: string }[] = [
   { key: "data", pair: ["2025", "2026"], label: "2025 → 2026" },
   { key: "osm", pair: ["2026", "2026osm"], label: "OSM təsiri" },
-  { key: "all", pair: ["2025", "2026osm"], label: "2025 → 2026+OSM" }
+  { key: "all", pair: ["2025", "2026osm"], label: "2025 → 2026+OSM" },
+  { key: "walk", pair: ["2026osm", "walk"], label: "Quş uçuşu → piyada" }
 ];
+
+type Distance = "crow" | "walk";
 
 type PoiSource = "local" | "osm" | "both";
 
@@ -91,6 +94,8 @@ export function MapPanel({
   const [group, setGroup] = useState(groups[0] ?? "");
   const [mode, setMode] = useState<MapMode>("band");
   const [version, setVersion] = useState<string>("2026osm");
+  // Piyada məsafəsi yalnız cari veri (2026 + OSM) üçün hesablanıb.
+  const [distance, setDistance] = useState<Distance>("crow");
   const [comparison, setComparison] = useState("osm");
   const [poiCategories, setPoiCategories] = useState<string[]>([]);
   const [poiSource, setPoiSource] = useState<PoiSource>("both");
@@ -98,6 +103,8 @@ export function MapPanel({
   const active = groups.includes(group) ? group : (groups[0] ?? "");
   const pair = COMPARISONS.find((c) => c.key === comparison)?.pair ?? ["2026", "2026osm"];
   const available = (v: string) => Boolean(layer?.v[v]?.[active]);
+  const walkReady = available("walk");
+  const shownVersion = version === "2026osm" && distance === "walk" && walkReady ? "walk" : version;
 
   const togglePoi = (name: string) =>
     setPoiCategories((prev) =>
@@ -192,7 +199,22 @@ export function MapPanel({
               label: v === "2026osm" ? "2026+OSM" : v
             }))}
           />
-        ) : (
+        ) : null}
+
+        {mode === "band" && version === "2026osm" ? (
+          <Segmented
+            label="Məsafə"
+            value={distance}
+            onChange={setDistance}
+            disabled={(d) => d === "walk" && !walkReady}
+            options={[
+              { value: "crow", label: "Quş uçuşu" },
+              { value: "walk", label: "Piyada (yol)" }
+            ]}
+          />
+        ) : null}
+
+        {mode === "band" ? null : (
           <div className="rounded-md border bg-card/92 p-1.5 backdrop-blur">
             <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Müqayisə
@@ -308,7 +330,7 @@ export function MapPanel({
         <span className="text-[10.5px] font-semibold">
           {mode === "delta"
             ? `${VERSION_LABELS[pair[0]]} → ${VERSION_LABELS[pair[1]]}`
-            : VERSION_LABELS[version]}
+            : VERSION_LABELS[shownVersion]}
         </span>
         <span className="text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">
           {mode === "delta" ? "Aşağı" : "1"}
@@ -332,7 +354,7 @@ export function MapPanel({
           layer={layer}
           group={active}
           mode={mode}
-          version={version}
+          version={shownVersion}
           compare={pair}
           pois={poiLayers}
           groups={groups}
