@@ -3,6 +3,7 @@
 import {
   Activity,
   BadgeCheck,
+  FlaskConical,
   Database,
   Plug,
   GitCompareArrows,
@@ -23,6 +24,7 @@ export type View =
   | "map"
   | "enrichment"
   | "h10"
+  | "verification"
   | "api"
   | "indices"
   | "metro"
@@ -51,6 +53,7 @@ const ITEMS: Omit<NavItem, "pill">[] = [
   { id: "map", icon: MapIcon, label: "Xəritə" },
   { id: "enrichment", icon: Database, label: "OSM zənginləşdirmə" },
   { id: "h10", icon: BadgeCheck, label: "H10 yoxlaması" },
+  { id: "verification", icon: FlaskConical, label: "Metod yoxlaması" },
   { id: "indices", icon: Activity, label: "İndekslər" },
   { id: "metro", icon: TrainFront, label: "Metro" },
   { id: "validation", icon: ShieldCheck, label: "Veri denetimi" },

@@ -57,6 +57,9 @@ VERSIONS = (
     ("2026osm", "2026 + OpenStreetMap"),
 )
 
+#: Yol ağı üzerinden yürüme sürümü (scripts/build_walking.py üretir).
+WALK = ("walk", "2026 + OSM · piyada")
+
 
 def points(frame: pd.DataFrame) -> list[list[float]]:
     return [
@@ -105,8 +108,31 @@ def main() -> int:
         ),
     }
 
+    walk_path = output / "walk_scores.csv"
+    versions = list(VERSIONS)
+    if walk_path.exists():
+        versions.append(WALK)
+
     bands: dict[str, dict[str, np.ndarray]] = {}
-    for version, _ in VERSIONS:
+    walk_ratio: dict[str, float] = {}
+    for version, _ in versions:
+        if version == WALK[0]:
+            print("skorlar · piyada (yol ağı)…")
+            walk = (
+                pd.read_csv(walk_path, encoding="utf-8").set_index("h3_index").loc[cells.h3_index]
+            )
+            scores = pd.concat([cells, walk.reset_index(drop=True).set_index(cells.index)], axis=1)
+            crow = pipeline.category_scores(cells, pools["2026osm"])
+            for col in crow.columns:
+                has = crow[col] > 0
+                if has.any():
+                    walk_ratio[col.removesuffix("_score")] = round(
+                        float((scores.loc[has, col] / crow.loc[has, col]).median()), 3
+                    )
+            bands[version] = {}
+            for group, model in models.items():
+                _, bands[version][group] = indices.score_group(scores, model)
+            continue
         print(f"skorlar · {version}…")
         scores = pd.concat([cells, pipeline.category_scores(cells, pools[version])], axis=1)
         bands[version] = {}
@@ -131,7 +157,7 @@ def main() -> int:
 
     # ── Harita katmanları ────────────────────────────────────────────
     frame = pd.DataFrame(
-        {f"{v}|{g}": bands[v][g].astype(np.int16) for v, _ in VERSIONS for g in bands[v]}
+        {f"{v}|{g}": bands[v][g].astype(np.int16) for v, _ in versions for g in bands[v]}
     )
     for resolution in MAP_RESOLUTIONS:
         print(f"H{resolution}…")
@@ -139,7 +165,7 @@ def main() -> int:
             keys = list(cells.h3_index)
             values = {
                 v: {g: frame[f"{v}|{g}"].astype(int).tolist() for g in bands[v]}
-                for v, _ in VERSIONS
+                for v, _ in versions
             }
         else:
             parent = [h3.cell_to_parent(c, resolution) for c in cells.h3_index]
@@ -147,7 +173,7 @@ def main() -> int:
             keys = list(coarse.index)
             values = {
                 v: {g: [round(float(x), 2) for x in coarse[f"{v}|{g}"]] for g in bands[v]}
-                for v, _ in VERSIONS
+                for v, _ in versions
             }
         payload = {"res": resolution, "h3": keys, "v": values}
         path = args.out / f"cells-r{resolution}.json"
@@ -200,7 +226,7 @@ def main() -> int:
             "resolution": settings.h3_resolution,
             "mapResolutions": list(MAP_RESOLUTIONS),
             "bbox": list(settings.bbox),
-            "versions": [{"key": k, "label": label} for k, label in VERSIONS],
+            "versions": [{"key": k, "label": label} for k, label in versions],
             "model": model_meta,
         },
         "groups": names,
@@ -236,6 +262,23 @@ def main() -> int:
         "beta": read_json(output / "beta_sensitivity.json"),
         "enrichment": read_json(output / "osm_enrichment.json"),
         "h10": read_json(output / "h10_verification.json"),
+        "teamComparison": read_json(output / "team_comparison.json"),
+        "bandCheck": read_json(output / "band_check.json"),
+        "google": read_json(output / "google_walk_check.json"),
+        "walking": {
+            "available": walk_path.exists(),
+            "score_ratio_median": walk_ratio,
+            "band_shift": {
+                g: {
+                    "mean": round(float((bands[WALK[0]][g] - delivered[g]).mean()), 3),
+                    "lower_pct": round(float((bands[WALK[0]][g] < delivered[g]).mean() * 100), 1),
+                    "same_pct": round(float((bands[WALK[0]][g] == delivered[g]).mean() * 100), 1),
+                }
+                for g in names
+            }
+            if WALK[0] in bands
+            else {},
+        },
         "decay": catalogue.DECAY,
         "retired": catalogue.RETIRED,
     }

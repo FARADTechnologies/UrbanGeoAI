@@ -98,7 +98,8 @@ export function categoryColor(key: string) {
 export const VERSION_LABELS: Record<string, string> = {
   "2025": "2025",
   "2026": "2026",
-  "2026osm": "2026 + OSM"
+  "2026osm": "2026 + OSM",
+  walk: "2026 + OSM · piyada"
 };
 
 export function groupLabel(key: string) {
