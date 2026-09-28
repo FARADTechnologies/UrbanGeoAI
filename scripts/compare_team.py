@@ -131,6 +131,14 @@ def load_notebook_metro(settings) -> pd.DataFrame:
     )
     client = osm.OverpassClient(cache_dir=settings.paths.cache)
     payload = client.query(query, f"metro_{METRO_DATE[:10]}")
+    if not payload.get("elements"):
+        # Tarihli (attic) sorguyu her Overpass sunucusu desteklemiyor ve boş
+        # dönebiliyor. Bu tarihsel bir anlık görüntü, değişmez: veri deposunda
+        # cache/metro_2025-03-27.json olarak sabit tutuluyor.
+        raise RuntimeError(
+            f"Overpass {METRO_DATE[:10]} tarihli metro sorgusu boş döndü; "
+            f"cache/metro_{METRO_DATE[:10]}.json anlık görüntüsü gerekli"
+        )
     rows = [
         {
             "lat": e["lat"],

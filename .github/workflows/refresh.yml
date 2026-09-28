@@ -45,7 +45,8 @@ jobs:
   refresh:
     name: Hesablama və yayım
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    # Özəl depoda bulut maşını 2 nüvəlidir; piyada hesabı ~90 dəq çəkir.
+    timeout-minutes: 210
 
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +59,10 @@ jobs:
           path: data-repo
 
       - name: Konfiqurasiya
-        run: cp data-repo/config/paths.ci.yml config/paths.yml
+        run: |
+          cp data-repo/config/paths.ci.yml config/paths.yml
+          # Dəyişməyən tarixi OSM görüntüləri (ekibin 2025-03-27 metro sorğusu).
+          mkdir -p cache && cp data-repo/cache/*.json cache/
 
       - name: Python
         uses: actions/setup-python@v5
