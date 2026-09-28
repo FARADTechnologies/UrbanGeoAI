@@ -57,8 +57,8 @@ VERSIONS = (
     ("2026osm", "2026 + OpenStreetMap"),
 )
 
-#: Yol ağı üzerinden yürüme sürümü (scripts/build_walking.py üretir).
-WALK = ("walk", "2026 + OSM · piyada")
+#: Yol ağı üzerinden yürüme sürümü (scripts/build_walking.py üretir, OSRM).
+WALK = ("walk", "2026 + OSM · piyada (OSRM)")
 
 
 def points(frame: pd.DataFrame) -> list[list[float]]:
@@ -267,7 +267,8 @@ def main() -> int:
         "h10": read_json(output / "h10_verification.json"),
         "teamComparison": read_json(output / "team_comparison.json"),
         "bandCheck": read_json(output / "band_check.json"),
-        "google": read_json(output / "google_walk_check.json"),
+        "walkMeta": read_json(output / "walk_meta.json"),
+        "duplicates": read_json(output / "duplicates.json"),
         "walking": {
             "available": walk_path.exists(),
             "score_ratio_median": walk_ratio,

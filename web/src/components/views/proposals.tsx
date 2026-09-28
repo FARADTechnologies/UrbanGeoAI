@@ -19,26 +19,6 @@ type Proposal = {
 
 const PROPOSALS: Proposal[] = [
   {
-    title: "Yürüyüş məsafəsi: quş uçuşu yerinə yol şəbəkəsi",
-    situation:
-      "Bütün məsafələr düz xətt. Kod bazasında yol şəbəkəsi ilə bağlı heç nə yoxdur. Dəmiryolunun o tayındakı məktəb ilə küçənin o tayındakı məktəb eyni balı verir.",
-    options: [
-      {
-        label: "Google Directions API",
-        body: "Ən dəqiq, amma miqyas uymur: 120 349 hüceyrə × kateqoriya başına bir neçə nöqtə ≈ milyonlarla sorğu. Tək mənzil hesabatı üçün canlı sorğu məntiqlidir, toplu indeks üçün deyil."
-      },
-      {
-        label: "OpenStreetMap yol şəbəkəsi + yerli yönləndirmə",
-        body: "Bakının piyada şəbəkəsi OSM-də var. Yerli motor qurulur, məsafələr bir dəfə hesablanır. İnternet lazım deyil, sorğu haqqı yoxdur, nəticə təkrar istehsal oluna bilir. Quraşdırma bir günlük iş.",
-        recommended: true
-      },
-      {
-        label: "Maneə cəriməsi",
-        body: "Quş uçuşu qalır, amma iki nöqtə arasında dəniz, dəmiryolu və ya çevrə yolu keçirsə məsafəyə cərimə əlavə olunur. Doğru deyil, amma indikindən yaxşıdır və bir gündə olur."
-      }
-    ]
-  },
-  {
     title: "POI keyfiyyət çəkisi",
     situation:
       "Mənbə fayllarda yalnız id, ad, tip və koordinat var. Beş ulduzlu otel ilə kiçik qonaq evi eyni çəkidə sayılır. OpenStreetMap etiketləri ölçüldü: otellərin yalnız 5%-ində ulduz, 6%-ində otaq sayı var.",

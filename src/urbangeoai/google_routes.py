@@ -1,5 +1,9 @@
 """Google Routes API ile yürüme mesafesi.
 
+**Şu an kullanılmıyor** (2026-09-28 kararı: Google API ücret nedeniyle iptal,
+yaya mesafesi OSRM ile yerelde hesaplanıyor — ``urbangeoai.osrm``). Kod ileride
+gerekirse diye duruyor; boru hattı ve panel buna bağlı değil.
+
 Toplu hesap (120 bin hücre) OpenStreetMap yol ağıyla yapılıyor; Google bu
 ölçekte çok pahalı. Google iki yerde kullanılır: tek daire raporunda canlı
 mesafe, ve OSM yol ağının doğruluğunu örnek noktalarda sınamak.
