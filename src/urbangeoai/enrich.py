@@ -32,7 +32,7 @@ import pandas as pd
 import shapely
 from sklearn.neighbors import BallTree
 
-from urbangeoai import dedupe
+from urbangeoai import dedupe, names
 from urbangeoai.metro import normalise_name
 
 EARTH_RADIUS_M = 6_371_000.0
@@ -191,7 +191,7 @@ def osm_candidates(payload: dict, boundary=None) -> pd.DataFrame:
                 "osm_value": _tag_value(category, tags),
             }
         )
-    frame = pd.DataFrame(rows, columns=CANDIDATE_COLUMNS)
+    frame = names.standardise(pd.DataFrame(rows, columns=CANDIDATE_COLUMNS))
     if boundary is not None and not frame.empty:
         inside = shapely.contains_xy(boundary, frame["lon"].to_numpy(), frame["lat"].to_numpy())
         frame = frame[inside].reset_index(drop=True)
@@ -370,6 +370,8 @@ def compare(
     """
     if "alt_names" not in osm.columns:
         osm = osm.assign(alt_names="")
+    if "name_std" not in osm.columns:
+        osm = names.standardise(osm)
     additions = []
     results = []
     for category in CATEGORIES:
@@ -428,6 +430,7 @@ def compare(
         "category",
         "name",
         "alt_names",
+        "name_std",
         "lat",
         "lon",
         "area_m2",
@@ -440,6 +443,11 @@ def compare(
     return added[columns], results
 
 
+#: OSM eklemesinden havuza taşınan sütunlar. ``osm_id`` panelde nesnenin
+#: OSM sayfasına bağlanmak için tutulur.
+MERGED_COLUMNS = ("name", "name_std", "lat", "lon", "source", "osm_type", "osm_id")
+
+
 def merge(local: dict[str, pd.DataFrame], additions: pd.DataFrame) -> dict[str, pd.DataFrame]:
     """Yerel havuza OSM eklemelerini katar; her satır kaynağını taşır."""
     merged: dict[str, pd.DataFrame] = {}
@@ -449,7 +457,6 @@ def merge(local: dict[str, pd.DataFrame], additions: pd.DataFrame) -> dict[str, 
         if extra.empty:
             merged[category] = base
             continue
-        merged[category] = pd.concat(
-            [base, extra[["name", "lat", "lon", "source"]]], ignore_index=True
-        )
+        keep = [c for c in MERGED_COLUMNS if c in extra.columns]
+        merged[category] = pd.concat([base, extra[keep]], ignore_index=True)
     return merged
