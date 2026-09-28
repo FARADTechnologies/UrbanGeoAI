@@ -111,3 +111,42 @@ def test_nearby_is_sorted_and_carries_the_source(client):
         c.get("/v1/poi/nearby", params={"lat": LAT, "lon": LON, "category": "yox"}).status_code
         == 404
     )
+
+
+def test_bundle_round_trip_needs_no_raw_data(tmp_path):
+    """Bulut sunucusu paketten başlar: ham dosya ve Overpass gerekmez."""
+    from urbangeoai import indices
+
+    centre = h3.latlng_to_cell(LAT, LON, 10)
+    lat, lon = h3.cell_to_latlng(centre)
+    pd.DataFrame(
+        [
+            {
+                "h3_index": centre,
+                "latitude": lat,
+                "longitude": lon,
+                "təhsil_score": 7,
+                "təhsil_index": 0.4,
+            }
+        ]
+    ).to_csv(tmp_path / api.BUNDLE_TABLE, index=False)
+    model = indices.GroupModel(["kdgr"], [0.0], [1.0], [1.0], 1.0, 0.0, [])
+    indices.save_model({"təhsil": model}, tmp_path / api.BUNDLE_MODEL, {"fitted_on": "current"})
+    pd.DataFrame(
+        [
+            {
+                "category": "kdgr",
+                "name": "Bağça",
+                "name_std": "Bağça",
+                "lat": LAT,
+                "lon": LON,
+                "source": "yerli",
+            }
+        ]
+    ).to_csv(tmp_path / api.BUNDLE_POOL, index=False)
+
+    store = api.load_bundle(tmp_path)
+    with TestClient(api.create_app(lambda: store)) as c:
+        assert c.get("/health").json()["cells"] == 1
+        nearby = c.get("/v1/poi/nearby", params={"lat": LAT, "lon": LON, "category": "kdgr"})
+        assert nearby.status_code == 200

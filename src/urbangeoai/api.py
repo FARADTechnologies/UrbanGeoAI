@@ -21,6 +21,7 @@ import math
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import h3
 import numpy as np
@@ -151,6 +152,9 @@ class PointBatch(BaseModel):
 
 
 DEFAULT_ORIGINS = ("http://localhost:3000", "http://127.0.0.1:3000")
+
+#: Yayındaki panelin adresleri (Firebase Hosting).
+PRODUCTION_ORIGINS = ("https://urbangeoai.web.app", "https://urbangeoai.firebaseapp.com")
 
 
 def create_app(
@@ -287,4 +291,64 @@ def load_store(settings) -> Store:
         pipeline.load_additions(settings),
         quiet=True,
     )
+    return Store.build(table, groups, {"model": meta}, pool)
+
+
+#: API paketindeki dosyalar. Paket, sunucuda başlarken ham verilere ve
+#: Overpass'a ihtiyaç duymasın diye boru hattı tarafından hazırlanır.
+BUNDLE_TABLE = "accessibility_indices.csv"
+BUNDLE_MODEL = "index_model.json"
+BUNDLE_POOL = "pool.csv"
+POOL_COLUMNS = ["category", "name", "name_std", "lat", "lon", "source"]
+
+
+def write_bundle(settings, dest: Path) -> Path:
+    """Bulutta çalışan API için kendine yeten paketi yazar.
+
+    Yerel ``load_store`` başlarken ham dosyaları okuyup metroyu Overpass'tan
+    çekiyor; sunucuda bu hem yavaş hem kırılgan. Paket teslim tablosunu,
+    modeli ve hazır POI havuzunu taşır.
+    """
+    import shutil  # noqa: PLC0415
+
+    from urbangeoai import catalogue, pipeline  # noqa: PLC0415
+
+    dest = Path(dest)
+    dest.mkdir(parents=True, exist_ok=True)
+    output = settings.paths.output
+    shutil.copy(output / BUNDLE_TABLE, dest / BUNDLE_TABLE)
+    shutil.copy(output / BUNDLE_MODEL, dest / BUNDLE_MODEL)
+    pool = pipeline.load_pool(
+        settings.paths.raw_current,
+        catalogue.SOURCES,
+        pipeline.load_metro(settings).frame(),
+        pipeline.load_additions(settings),
+        quiet=True,
+    )
+    frames = []
+    for category, frame in pool.items():
+        frame = frame.assign(category=category)
+        if "name_std" not in frame.columns:
+            frame = frame.assign(name_std=frame["name"])
+        frames.append(frame.reindex(columns=POOL_COLUMNS))
+    pd.concat(frames, ignore_index=True).to_csv(dest / BUNDLE_POOL, index=False, encoding="utf-8")
+    return dest
+
+
+def load_bundle(path: Path) -> Store:
+    """``write_bundle`` paketinden Store kurar (bulut sunucusu)."""
+    import json  # noqa: PLC0415
+
+    from urbangeoai import indices  # noqa: PLC0415
+
+    path = Path(path)
+    table = pd.read_csv(path / BUNDLE_TABLE, encoding="utf-8")
+    model_path = path / BUNDLE_MODEL
+    groups = list(indices.load_model(model_path))
+    meta = json.loads(model_path.read_text(encoding="utf-8")).get("metadata", {})
+    pool_frame = pd.read_csv(path / BUNDLE_POOL, encoding="utf-8", keep_default_na=False)
+    pool = {
+        category: frame.drop(columns="category").reset_index(drop=True)
+        for category, frame in pool_frame.groupby("category", sort=False)
+    }
     return Store.build(table, groups, {"model": meta}, pool)
