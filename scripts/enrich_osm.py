@@ -67,17 +67,20 @@ def wikidata_images(ids: list[str], cache: Path) -> dict[str, str]:
     return known
 
 
+def _has_image(info: dict) -> bool:
+    """Tek bir resim var mı. Commons "Category:" bir klasördür, resim değil."""
+    return "image" in info or str(info.get("commons", "")).startswith("File:")
+
+
 def add_images(candidates: pd.DataFrame, cache: Path) -> pd.DataFrame:
     """Resmi olmayan ama Wikidata bağlantısı olan nesnelere Commons resmini ekler."""
     infos = [json.loads(s) if s else {} for s in candidates["info"]]
-    ids = [
-        i["wikidata"] for i in infos if "wikidata" in i and not ({"image", "commons"} & i.keys())
-    ]
+    ids = [i["wikidata"] for i in infos if "wikidata" in i and not _has_image(i)]
     if not ids:
         return candidates
     images = wikidata_images(ids, cache)
     for info in infos:
-        if "wikidata" in info and not ({"image", "commons"} & info.keys()):
+        if "wikidata" in info and not _has_image(info):
             if images.get(info["wikidata"]):
                 info["commons"] = images[info["wikidata"]]
     return candidates.assign(info=[json.dumps(i, ensure_ascii=False) if i else "" for i in infos])

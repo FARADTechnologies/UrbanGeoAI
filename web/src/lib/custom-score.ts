@@ -196,6 +196,8 @@ export function customBands(columns: Float32Array[]): Uint8Array {
     const za = z[a];
     for (let i = 0; i < n; i++) index[i] += za[i] * w;
   }
+  // indices.compute_index: 10 ondalığa yuvarlama, eşit hüceyrələr eşit qalsın.
+  for (let i = 0; i < n; i++) index[i] = Math.round(index[i] * 1e10) / 1e10;
   const { floor, edges } = fitBands(index);
   return applyBands(index, floor, edges);
 }
