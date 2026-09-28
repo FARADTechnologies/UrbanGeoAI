@@ -25,6 +25,7 @@ Veri OpenStreetMap katkıcılarına aittir ve ODbL ile lisanslanmıştır.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
 
 import numpy as np
@@ -189,6 +190,7 @@ def osm_candidates(payload: dict, boundary=None) -> pd.DataFrame:
                 "osm_type": element.get("type", ""),
                 "osm_id": int(element.get("id", -1)),
                 "osm_value": _tag_value(category, tags),
+                "info": json.dumps(osm_info(tags), ensure_ascii=False) if osm_info(tags) else "",
             }
         )
     frame = names.standardise(pd.DataFrame(rows, columns=CANDIDATE_COLUMNS))
@@ -200,7 +202,38 @@ def osm_candidates(payload: dict, boundary=None) -> pd.DataFrame:
 
 CANDIDATE_COLUMNS = [
     "category", "name", "alt_names", "lat", "lon", "area_m2", "osm_type", "osm_id", "osm_value",
+    "info",
 ]  # fmt: skip
+
+#: Panelde nesne kartında gösterilen OSM etiketleri: kart adı → etiketler
+#: (ilk dolu olan alınır).
+INFO_TAGS: dict[str, tuple[str, ...]] = {
+    "web": ("website", "contact:website", "url"),
+    "phone": ("phone", "contact:phone"),
+    "hours": ("opening_hours",),
+    "image": ("image",),
+    "commons": ("wikimedia_commons",),
+    "wikidata": ("wikidata",),
+    "wikipedia": ("wikipedia",),
+    "cuisine": ("cuisine",),
+    "stars": ("stars",),
+    "instagram": ("contact:instagram",),
+}
+
+
+def osm_info(tags: dict) -> dict:
+    """Nesne kartı için etiketler; boşsa boş sözlük. Adres tek satıra birleşir."""
+    out = {}
+    for key, options in INFO_TAGS.items():
+        for option in options:
+            if tags.get(option):
+                out[key] = str(tags[option])
+                break
+    street = " ".join(str(tags[k]) for k in ("addr:street", "addr:housenumber") if tags.get(k))
+    if street:
+        out["addr"] = street
+    return out
+
 
 #: Aynı nesnenin başka dillerdeki ya da resmi adları. Yerel veri Azərbaycanca
 #: yazar, OSM'de ad bazen yalnız rusca ya da ingilizcedir.
@@ -372,6 +405,8 @@ def compare(
         osm = osm.assign(alt_names="")
     if "name_std" not in osm.columns:
         osm = names.standardise(osm)
+    if "info" not in osm.columns:
+        osm = osm.assign(info="")
     additions = []
     results = []
     for category in CATEGORIES:
@@ -431,6 +466,7 @@ def compare(
         "name",
         "alt_names",
         "name_std",
+        "info",
         "lat",
         "lon",
         "area_m2",
@@ -445,7 +481,7 @@ def compare(
 
 #: OSM eklemesinden havuza taşınan sütunlar. ``osm_id`` panelde nesnenin
 #: OSM sayfasına bağlanmak için tutulur.
-MERGED_COLUMNS = ("name", "name_std", "lat", "lon", "source", "osm_type", "osm_id")
+MERGED_COLUMNS = ("name", "name_std", "lat", "lon", "source", "osm_type", "osm_id", "info")
 
 
 def merge(local: dict[str, pd.DataFrame], additions: pd.DataFrame) -> dict[str, pd.DataFrame]:

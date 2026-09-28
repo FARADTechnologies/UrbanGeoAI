@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import urllib.request
 from datetime import date
 from pathlib import Path
 
@@ -32,11 +33,54 @@ from urbangeoai import catalogue, config, console, enrich, grid, osm, pipeline  
 
 ADDITIONS_FILE = "osm_additions.csv"
 REPORT_FILE = "osm_enrichment.json"
+CANDIDATES_FILE = "osm_candidates.csv"
 
 
 def load_local(base: Path) -> dict:
     """İş ortağının kategorileri, tekrarları atılmış (metro hariç)."""
     return pipeline.load_local(base, catalogue.SOURCES, quiet=True)
+
+
+def wikidata_images(ids: list[str], cache: Path) -> dict[str, str]:
+    """Wikidata nesnelerinin resmi (P18) — Commons dosya adı. Önbellekli."""
+    known = json.loads(cache.read_text(encoding="utf-8")) if cache.exists() else {}
+    missing = [i for i in dict.fromkeys(ids) if i not in known]
+    for start in range(0, len(missing), 50):
+        chunk = missing[start : start + 50]
+        url = (
+            "https://www.wikidata.org/w/api.php?action=wbgetentities&props=claims&format=json&ids="
+            + "|".join(chunk)
+        )
+        request = urllib.request.Request(url, headers={"User-Agent": "urbangeoai/0.1"})
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                entities = json.load(response).get("entities", {})
+        except OSError as exc:
+            print(f"  Wikidata alınamadı: {exc}", file=sys.stderr)
+            break
+        for qid in chunk:
+            claims = entities.get(qid, {}).get("claims", {}).get("P18", [])
+            value = claims[0]["mainsnak"].get("datavalue", {}).get("value") if claims else None
+            known[qid] = f"File:{value}" if value else ""
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_text(json.dumps(known, ensure_ascii=False, indent=1), encoding="utf-8")
+    return known
+
+
+def add_images(candidates: pd.DataFrame, cache: Path) -> pd.DataFrame:
+    """Resmi olmayan ama Wikidata bağlantısı olan nesnelere Commons resmini ekler."""
+    infos = [json.loads(s) if s else {} for s in candidates["info"]]
+    ids = [
+        i["wikidata"] for i in infos if "wikidata" in i and not ({"image", "commons"} & i.keys())
+    ]
+    if not ids:
+        return candidates
+    images = wikidata_images(ids, cache)
+    for info in infos:
+        if "wikidata" in info and not ({"image", "commons"} & info.keys()):
+            if images.get(info["wikidata"]):
+                info["commons"] = images[info["wikidata"]]
+    return candidates.assign(info=[json.dumps(i, ensure_ascii=False) if i else "" for i in infos])
 
 
 def main() -> int:
@@ -77,6 +121,10 @@ def main() -> int:
         f"tekrarlar atılınca {len(deduped):,}, süzgeçten sonra {len(candidates):,}"
     )
 
+    # Bütün adaylar (eklenenler ve yerelde karşılığı olanlar) — panel, yerel
+    # bir kaydın OSM karşılığını bulup kartında site/telefon göstermek için okur.
+    candidates = add_images(candidates, settings.paths.cache / "wikidata_images.json")
+    candidates.to_csv(out_dir / CANDIDATES_FILE, index=False, encoding="utf-8")
     additions, results = enrich.compare(local, candidates)
     filtered = rejected["category"].value_counts().to_dict()
     for r in results:
