@@ -100,3 +100,33 @@ def test_safety_group_is_excluded_from_comparison():
 
     members = catalogue.GROUPS["təhlükəsizlik"]
     assert not all(x in compare_versions.LEGACY_SOURCES for x in members)
+
+
+def test_frozen_ruler_shows_improvement_that_refitting_hides():
+    """Her hücrede hizmet artarsa dondurulmuş cetvel yukarı, yeniden uydurma sıfır gösterir."""
+    from urbangeoai import indices
+
+    rng = np.random.default_rng(0)
+    # Gerçek veride olduğu gibi iki kategori birlikte artar (merkeze yakınlık).
+    centre = rng.gamma(2.0, 1.0, 5000)
+    before = pd.DataFrame(
+        {
+            "a_score": centre + rng.gamma(1.0, 0.3, 5000),
+            "b_score": centre + rng.gamma(1.0, 0.3, 5000),
+        }
+    )
+    after = before * 1.5 + 0.5
+
+    ruler = indices.fit_group(before, ["a", "b"])
+    _, band_before = indices.score_group(before, ruler)
+    _, band_after = indices.score_group(after, ruler)
+    frozen = compare_versions.compare(before["a_score"], band_before, after["a_score"], band_after)
+
+    refit = indices.fit_group(after, ["a", "b"])
+    _, band_refit = indices.score_group(after, refit)
+    relative = compare_versions.compare(
+        before["a_score"], band_before, after["a_score"], band_refit
+    )
+
+    assert frozen["mean_shift"] > 0.5
+    assert abs(relative["mean_shift"]) < 0.05

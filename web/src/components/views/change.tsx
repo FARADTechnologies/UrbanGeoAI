@@ -10,7 +10,7 @@ function EffectTable({ rows }: { rows: Record<string, EffectRow> }) {
       <table className="w-full min-w-[560px] border-separate border-spacing-0 text-left text-[12px]">
         <thead>
           <tr>
-            {["İndeks", "Spearman", "Oynayan", "Yuxarı", "Aşağı", "Tavan"].map((h) => (
+            {["İndeks", "Spearman", "Oynayan", "Yuxarı", "Aşağı", "Orta dəyişim", "Tavan"].map((h) => (
               <th
                 key={h}
                 className="border-b px-3 py-2 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground"
@@ -42,6 +42,10 @@ function EffectTable({ rows }: { rows: Record<string, EffectRow> }) {
               <td className="border-b px-3 py-2 tabular-nums text-[var(--err-500)]">
                 {row.down_pct.toFixed(1)}%
               </td>
+              <td className="border-b px-3 py-2 tabular-nums">
+                {row.mean_shift > 0 ? "+" : ""}
+                {row.mean_shift.toFixed(2)}
+              </td>
               <td className="border-b px-3 py-2 tabular-nums text-muted-foreground">
                 {row.max_band_before} → {row.max_band_after}
               </td>
@@ -70,15 +74,17 @@ export function ChangeView({ summary }: { summary: Summary }) {
   return (
     <>
       <DashboardCard
-        title="Veri etkisi — yöntem sabit, veri yeni"
-        subtitle={`${formatCount(comparison.cells)} hüceyrə · 2025 verisi ilə 2026 verisi eyni kodla puanlandı`}
+        title="Veri etkisi — eyni metod, eyni cədvəl, yeni veri"
+        subtitle={`${formatCount(comparison.cells)} hüceyrə · model və bant sərhədləri 2025-də uyduruldu və donduruldu, 2026 eyni cədvəllə ölçüldü`}
       >
         <EffectTable rows={comparison.data_effect} />
         <p className="mt-3 text-[11.5px] leading-relaxed text-muted-foreground">
-          POI sayı hər kateqoriyada artdığı halda indekslərin çoxunda daha çox hüceyrə{" "}
-          <span className="font-semibold text-[var(--err-500)]">aşağı</span> düşür. Səbəb bal
-          deyil, sıralama: model hər sürümdə yenidən uydurulanda ətrafı dəyişməyən bir hüceyrə də
-          yerini itirir. Dondurulmuş model bunun üçün gətirildi.
+          Hüceyrələrin böyük əksəriyyəti ya yerində qalır, ya{" "}
+          <span className="font-semibold text-[var(--ok-500)]">yuxarı</span> qalxır: 2025 → 2026 arasında
+          obyekt sayı artıb. Əvvəlki hesabatda model hər sürüm üçün yenidən uydurulurdu; onda bantlar hər
+          sürümdə yenə bərabər paylanır və ətrafı yaxşılaşan hüceyrə də sırada geri düşmüş görünürdü (məs.
+          əyləncədə 19.9% «aşağı»). Düzgün müqayisə eyni cədvəllədir — xəritədəki «Dəyişim» də belə işləyir.
+          Metro hər iki sürümdə bugünkü siyahıdandır, ona görə nəqliyyatdakı fərq yalnız dayanacaqlardan gəlir.
         </p>
       </DashboardCard>
 

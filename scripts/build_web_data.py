@@ -150,7 +150,10 @@ def main() -> int:
             "weights": [round(float(c), 3) for c in m.components],
             "loadings": pipeline.original_loadings(m),
             "bands": indices.band_coverage(delivered[g]),
-            "fittedOnPrevious": all(x in pools["2025"] for x in m.members),
+            # Modelin gerçekten 2025'e uydurulup uydurulmadığı modelin kendi
+            # kaydından okunur; üyelerin 2025'te bulunması bunu göstermez.
+            "fittedOnPrevious": model_meta.get("fitted_on") == "previous"
+            and all(x in pools["2025"] for x in m.members),
         }
         for g, m in models.items()
     }
