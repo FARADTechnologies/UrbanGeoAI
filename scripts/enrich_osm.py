@@ -26,22 +26,17 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from urbangeoai import catalogue, config, console, enrich, grid, io, osm  # noqa: E402
+import pandas as pd  # noqa: E402
+
+from urbangeoai import catalogue, config, console, enrich, grid, osm, pipeline  # noqa: E402
 
 ADDITIONS_FILE = "osm_additions.csv"
 REPORT_FILE = "osm_enrichment.json"
 
 
 def load_local(base: Path) -> dict:
-    """İş ortağının kategorilerini yükler (metro hariç)."""
-    out = {}
-    for name, (fname, typ) in catalogue.SOURCES.items():
-        path = base / fname
-        if not path.exists():
-            continue
-        frame = io.read_poi(path).frame
-        out[name] = io.filter_type(frame, typ) if typ else frame
-    return out
+    """İş ortağının kategorileri, tekrarları atılmış (metro hariç)."""
+    return pipeline.load_local(base, catalogue.SOURCES, quiet=True)
 
 
 def main() -> int:
@@ -70,7 +65,12 @@ def main() -> int:
     )
     boundary = grid.load_boundary(settings.paths.reference).to_crs(4326).geometry.union_all()
     raw = enrich.osm_candidates(payload, boundary)
-    deduped = enrich.dedupe_osm(raw)
+    duplicates: list = []
+    deduped = enrich.dedupe_osm(raw, report=duplicates)
+    duplicate_table = (
+        pd.concat(duplicates, ignore_index=True) if duplicates else raw.iloc[0:0].assign(reason="")
+    )
+    duplicate_table.to_csv(out_dir / "osm_duplicates.csv", index=False, encoding="utf-8")
     candidates, rejected = enrich.apply_rules(deduped)
     print(
         f"  {len(payload.get('elements', [])):,} nesne indi, sınır içinde {len(raw):,}, "
@@ -89,6 +89,7 @@ def main() -> int:
         "osm_elements": len(payload.get("elements", [])),
         "inside_boundary": len(raw),
         "after_dedupe": len(deduped),
+        "duplicates_by_reason": duplicate_table["reason"].value_counts().to_dict(),
         "after_rules": len(candidates),
         "rejected_by_reason": rejected["reason"].value_counts().to_dict(),
         "match_radius_m": enrich.MATCH_RADIUS_M,
@@ -97,6 +98,7 @@ def main() -> int:
             "local": sum(r.local for r in results),
             "osm": sum(r.osm for r in results),
             "matched": sum(r.matched for r in results),
+            "matched_by_name": sum(r.matched_by_name for r in results),
             "added": sum(r.added for r in results),
         },
     }

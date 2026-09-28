@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from urbangeoai import catalogue, enrich, io, metro, osm, scoring
+from urbangeoai import catalogue, dedupe, enrich, io, metro, osm, scoring
 
 #: ``scripts/enrich_osm.py``'nin yazdığı ek dosyanın adı (çıktı dizininde).
 ADDITIONS_FILE = "osm_additions.csv"
@@ -31,8 +31,8 @@ def load_additions(settings) -> pd.DataFrame | None:
     return pd.read_csv(path, encoding="utf-8", keep_default_na=False)
 
 
-def load_local(base: Path, sources: dict, quiet: bool = False) -> dict[str, pd.DataFrame]:
-    """Kaynak tablosundaki kategorileri yükler (metro hariç)."""
+def load_raw(base: Path, sources: dict, quiet: bool = False) -> dict[str, pd.DataFrame]:
+    """Kaynak tablosundaki kategorileri olduğu gibi yükler (metro hariç)."""
     out: dict[str, pd.DataFrame] = {}
     for name, (fname, typ) in sources.items():
         path = base / fname
@@ -43,6 +43,33 @@ def load_local(base: Path, sources: dict, quiet: bool = False) -> dict[str, pd.D
         frame = io.read_poi(path).frame
         out[name] = io.filter_type(frame, typ) if typ else frame
     return out
+
+
+def clean(frame: pd.DataFrame, category: str) -> dedupe.DedupeResult:
+    """Bir kategorinin tekrar eden kayıtlarını teke indirir (bkz. ``dedupe``)."""
+    return dedupe.dedupe(frame, category, named=dedupe.has_real_names(frame))
+
+
+def local_duplicates(
+    base: Path, sources: dict, quiet: bool = True
+) -> dict[str, dedupe.DedupeResult]:
+    """Her kategori için temizlik sonucu — atılanlar nedenleriyle."""
+    return {name: clean(frame, name) for name, frame in load_raw(base, sources, quiet).items()}
+
+
+def load_local(
+    base: Path, sources: dict, quiet: bool = False, deduplicate: bool = True
+) -> dict[str, pd.DataFrame]:
+    """Kaynak tablosundaki kategorileri tekrarları atılmış olarak yükler.
+
+    Aynı yer iki kez kayıtlıysa skor onu iki kez sayardı. ``deduplicate=False``
+    yalnız ham dosyayı birebir izlemesi gereken yerler (ekip notebook'unun
+    kopyası) içindir.
+    """
+    raw = load_raw(base, sources, quiet)
+    if not deduplicate:
+        return raw
+    return {name: clean(frame, name).kept for name, frame in raw.items()}
 
 
 def load_metro(settings) -> metro.MetroReport:
