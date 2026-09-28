@@ -9,7 +9,9 @@ import Map from "react-map-gl/maplibre";
 
 import { useTheme } from "@/components/theme-provider";
 import { categoryColor, categoryLabel, groupLabel, VERSION_LABELS } from "@/lib/data";
-import type { CellLayer, Points } from "@/types/data";
+import type { CellLayer, PoiKey, PoiSelection, Points } from "@/types/data";
+
+import { type CardTarget, PoiCard } from "./poi-card";
 
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -69,6 +71,8 @@ export type PoiLayer = {
   points: Points;
   /** Yerel nokta dolu daire, OSM eklemesi halka olarak çizilir. */
   kind: "local" | "osm";
+  /** Kart məlumatının açarı (poi-info.json). */
+  key: PoiKey;
 };
 
 type Props = {
@@ -81,6 +85,10 @@ type Props = {
   compare: [string, string];
   pois: PoiLayer[];
   groups: string[];
+  /** Kartdakı «Cədvəldə göstər». */
+  onShowInTable?: (selection: PoiSelection) => void;
+  /** Seçilmiş obyektlərə görə bal: verilərsə indeksin balı yerinə göstərilir. */
+  override?: { values: number[]; label: string } | null;
 };
 
 function escapeHtml(value: string) {
@@ -100,14 +108,26 @@ function fmt(value: number) {
  *  tək bir ləkəyə çevrilir. */
 const EDGE_ZOOM = 12.5;
 
-export function IndexMap({ layer, group, mode, version, compare, pois, groups }: Props) {
+export function IndexMap({
+  layer,
+  group,
+  mode,
+  version,
+  compare,
+  pois,
+  groups,
+  onShowInTable,
+  override
+}: Props) {
   const { theme } = useTheme();
   const isBase = layer.res >= 10;
   const tipRef = useRef<HTMLDivElement>(null);
   const [zoomedIn, setZoomedIn] = useState(false);
+  const [card, setCard] = useState<CardTarget | null>(null);
+  const closeCard = useCallback(() => setCard(null), []);
 
   const [from, to] = compare;
-  const bandValues = layer.v[version]?.[group];
+  const bandValues = override?.values ?? layer.v[version]?.[group];
   const before = layer.v[from]?.[group];
   const after = layer.v[to]?.[group];
   const hasDelta = Boolean(before && after);
@@ -156,7 +176,7 @@ export function IndexMap({ layer, group, mode, version, compare, pois, groups }:
       getLineWidth: 1,
       lineWidthMinPixels: 0.5,
       updateTriggers: {
-        getFillColor: [group, mode, version, from, to, layer.res],
+        getFillColor: [group, mode, version, from, to, layer.res, override],
         getLineColor: [theme]
       }
     })
@@ -193,7 +213,8 @@ export function IndexMap({ layer, group, mode, version, compare, pois, groups }:
         const name = rest.join("-");
         return (
           `<div style="font-weight:600">${escapeHtml(categoryLabel(name))}</div>
-           <div style="opacity:.7">${kind === "osm" ? "OpenStreetMap-dən əlavə" : "iş ortağının verisi"}</div>`
+           <div style="opacity:.7">${kind === "osm" ? "OpenStreetMap-dən əlavə" : "iş ortağının verisi"}</div>
+           <div style="opacity:.5;margin-top:4px;font-size:10.5px">ətraflı üçün klikləyin</div>`
         );
       }
       const row = object as { h3: string; i: number };
@@ -217,6 +238,11 @@ export function IndexMap({ layer, group, mode, version, compare, pois, groups }:
           </div>`;
         })
         .join("");
+      const custom =
+        override && mode === "band"
+          ? `<div style="display:flex;justify-content:space-between;gap:14px;font-weight:700;color:#fdba74;margin-bottom:4px">
+              <span>${escapeHtml(override.label)}</span><span>${fmt(override.values[row.i])}</span></div>`
+          : "";
       const label =
         mode === "delta"
           ? `${VERSION_LABELS[from]} → ${VERSION_LABELS[to]}`
@@ -227,10 +253,10 @@ export function IndexMap({ layer, group, mode, version, compare, pois, groups }:
         )} · H${layer.res}</div>
         <div style="font-size:11px;opacity:.65;margin-bottom:6px">${escapeHtml(label)}${
           isBase ? "" : " · H10 ortalaması"
-        }</div>${lines}${hasDelta || mode !== "delta" ? "" : "<div>müqayisə yoxdur</div>"}`
+        }</div>${custom}${lines}${hasDelta || mode !== "delta" ? "" : "<div>müqayisə yoxdur</div>"}`
       );
     },
-    [layer, group, mode, version, from, to, groups, isBase, hasDelta]
+    [layer, group, mode, version, from, to, groups, isBase, hasDelta, override]
   );
 
   // deck.gl 9.4-ün öz ipucu qutusu kartın hündürlüyü qədər yuxarıda yerləşirdi;
@@ -261,6 +287,34 @@ export function IndexMap({ layer, group, mode, version, compare, pois, groups }:
     [describe]
   );
 
+  const onClick = useCallback(
+    (info: PickingInfo) => {
+      const id = info.layer?.id ?? "";
+      if (!info.object || !id.startsWith("poi-")) {
+        setCard(null);
+        return;
+      }
+      const [, kind, ...rest] = id.split("-");
+      const category = rest.join("-");
+      const source = pois.find((p) => p.kind === kind && p.category === category);
+      const point = info.object as [number, number];
+      if (!source) return;
+      if (tipRef.current) tipRef.current.style.display = "none";
+      setCard({
+        key: source.key,
+        category,
+        index: info.index,
+        lat: point[0],
+        lon: point[1],
+        x: info.x,
+        y: info.y
+      });
+    },
+    [pois]
+  );
+
+  const container = tipRef.current?.parentElement;
+
   return (
     <>
       <DeckGL
@@ -268,8 +322,11 @@ export function IndexMap({ layer, group, mode, version, compare, pois, groups }:
         controller
         layers={layers}
         onHover={onHover}
+        onClick={onClick}
+        getCursor={({ isHovering }) => (isHovering ? "pointer" : "grab")}
         onViewStateChange={({ viewState }) => {
           if (tipRef.current) tipRef.current.style.display = "none";
+          if (card) setCard(null);
           const near = (viewState as { zoom: number }).zoom >= EDGE_ZOOM;
           if (near !== zoomedIn) setZoomedIn(near);
         }}
@@ -281,6 +338,14 @@ export function IndexMap({ layer, group, mode, version, compare, pois, groups }:
         className="pointer-events-none absolute left-0 top-0 z-20 hidden rounded-lg border border-white/10 bg-[#10161f]/95 p-2.5 text-[12px] text-[#f5f7fb] shadow-lg"
         style={{ minWidth: 200, maxWidth: 280 }}
       />
+      {card ? (
+        <PoiCard
+          target={card}
+          bounds={{ width: container?.clientWidth ?? 1200, height: container?.clientHeight ?? 700 }}
+          onClose={closeCard}
+          onShowInTable={onShowInTable}
+        />
+      ) : null}
     </>
   );
 }
