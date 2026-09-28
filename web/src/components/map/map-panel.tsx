@@ -1,12 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { aggregate, customBands, loadParents, loadScores } from "@/lib/custom-score";
 import { categoryColor, categoryLabel, formatCount, groupLabel, VERSION_LABELS } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import type { CellLayer, PoiLayers } from "@/types/data";
+import type { CellLayer, PoiLayers, PoiSelection } from "@/types/data";
 
 import type { MapMode, PoiLayer } from "./index-map";
 
@@ -41,7 +42,16 @@ type Props = {
   resolutions: number[];
   onResolutionChange: (value: number) => void;
   loading?: boolean;
+  onShowInTable?: (selection: PoiSelection) => void;
+  /** Sürüm → H10 kateqoriya skorları faylı (seçilmiş obyektlərə görə bal). */
+  scoreFiles?: Record<string, { file: string; categories: string[] }>;
+  /** İndeks → üzv kateqoriyalar. */
+  groupMembers?: Record<string, string[]>;
+  /** H10 hüceyrə sayı (skor fayllarının uzunluğu). */
+  scoreCells?: number;
 };
+
+type Custom = { values: number[]; label: string; exact: boolean } | { error: string };
 
 function Segmented<T extends string | number>({
   label,
@@ -89,7 +99,11 @@ export function MapPanel({
   resolution,
   resolutions,
   onResolutionChange,
-  loading
+  loading,
+  onShowInTable,
+  scoreFiles,
+  groupMembers,
+  scoreCells
 }: Props) {
   const [group, setGroup] = useState(groups[0] ?? "");
   const [mode, setMode] = useState<MapMode>("band");
@@ -99,6 +113,10 @@ export function MapPanel({
   const [comparison, setComparison] = useState("osm");
   const [poiCategories, setPoiCategories] = useState<string[]>([]);
   const [poiSource, setPoiSource] = useState<PoiSource>("both");
+  // Açıq olanda bal yalnız seçilmiş obyektlərə görə hesablanır.
+  const [customOn, setCustomOn] = useState(false);
+  const [custom, setCustom] = useState<Custom | null>(null);
+  const [computing, setComputing] = useState(false);
 
   const active = groups.includes(group) ? group : (groups[0] ?? "");
   const pair = COMPARISONS.find((c) => c.key === comparison)?.pair ?? ["2026", "2026osm"];
@@ -116,21 +134,81 @@ export function MapPanel({
   // Görünən sürüme uyğun POI qatları. 2025 seçiləndə OSM əlavələri göstərilmir.
   const poiLayers = useMemo<PoiLayer[]>(() => {
     if (!poi) return [];
-    const base = mode === "band" && version === "2025" ? poi["2025"] : poi["2026"];
+    const baseKey = mode === "band" && version === "2025" ? "2025" : "2026";
+    const base = poi[baseKey];
     const showOsm = !(mode === "band" && version !== "2026osm");
     const out: PoiLayer[] = [];
     for (const category of poiCategories) {
       if (poiSource !== "osm") {
-        out.push({ category, points: base[category] ?? [], kind: "local" });
+        out.push({ category, points: base[category] ?? [], kind: "local", key: baseKey });
       }
       if (poiSource !== "local" && showOsm) {
-        out.push({ category, points: poi.osm[category] ?? [], kind: "osm" });
+        out.push({ category, points: poi.osm[category] ?? [], kind: "osm", key: "osm" });
       }
     }
     return out;
   }, [poi, poiCategories, poiSource, mode, version]);
 
   const shownCount = poiLayers.reduce((n, l) => n + l.points.length, 0);
+
+  // Seçilmiş obyektlərə görə bal. Seçim bir indeksin bütün üzvlərinə
+  // bərabərdirsə hesablanmır — həmin indeksin rəsmi balı göstərilir, fərq
+  // ola bilməz.
+  const selectionKey = [...poiCategories].sort().join(",");
+  useEffect(() => {
+    if (!customOn || mode !== "band" || poiCategories.length === 0 || !layer) {
+      setCustom(null);
+      return;
+    }
+    const chosen = [...poiCategories].sort();
+    const same = Object.entries(groupMembers ?? {}).find(
+      ([, members]) => [...members].sort().join(",") === chosen.join(",")
+    );
+    if (same && layer.v[shownVersion]?.[same[0]]) {
+      setCustom({
+        values: layer.v[shownVersion][same[0]],
+        label: `= ${groupLabel(same[0])} indeksi (rəsmi bal)`,
+        exact: true
+      });
+      return;
+    }
+    const spec = scoreFiles?.[shownVersion];
+    if (!spec) {
+      setCustom({ error: "Bu sürüm üçün kateqoriya skorları yoxdur" });
+      return;
+    }
+    const missing = chosen.filter((c) => !spec.categories.includes(c));
+    if (missing.length) {
+      setCustom({ error: `${VERSION_LABELS[shownVersion]}-də yoxdur: ${missing.map(categoryLabel).join(", ")}` });
+      return;
+    }
+    let cancelled = false;
+    setComputing(true);
+    void (async () => {
+      const cells = scoreCells ?? 0;
+      const columns = await loadScores(spec.file, spec.categories.length, cells);
+      const parents = layer.res === 10 ? null : await loadParents(layer.res);
+      if (cancelled) return;
+      setComputing(false);
+      if (!columns || (layer.res !== 10 && !parents)) {
+        setCustom({ error: "Skor faylı yüklənmədi" });
+        return;
+      }
+      const bands = customBands(chosen.map((c) => columns[spec.categories.indexOf(c)]));
+      const values = parents ? aggregate(bands, parents, layer.h3.length) : Array.from(bands);
+      setCustom({
+        values,
+        label: `Yalnız: ${chosen.map(categoryLabel).join(" + ")}`,
+        exact: false
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customOn, mode, selectionKey, layer, shownVersion, scoreFiles, groupMembers]);
+
+  const override = custom && "values" in custom ? custom : null;
 
   return (
     <div className="relative h-full min-h-[600px] overflow-hidden rounded-lg">
@@ -298,6 +376,36 @@ export function MapPanel({
                 </button>
               ))}
             </div>
+            <label
+              className={cn(
+                "mb-1.5 flex cursor-pointer items-start gap-2 rounded border px-1.5 py-1 text-[10.5px]",
+                customOn ? "border-[var(--brand-500)] bg-[var(--brand-500)]/10" : "border-dashed",
+                mode !== "band" && "cursor-not-allowed opacity-50"
+              )}
+              title="Açıq olanda xəritədəki bal yalnız seçilmiş obyekt növlərinə görə hesablanır"
+            >
+              <input
+                type="checkbox"
+                className="mt-0.5 accent-[var(--brand-600)]"
+                checked={customOn}
+                disabled={mode !== "band"}
+                onChange={(e) => setCustomOn(e.target.checked)}
+              />
+              <span className="leading-snug">
+                <span className="font-semibold">Bal: yalnız seçilmiş obyektlərə görə</span>
+                <span className="block text-muted-foreground">
+                  {!customOn
+                    ? "bağlı — indeksin öz balı"
+                    : poiCategories.length === 0
+                      ? "obyekt növü seçin"
+                      : computing
+                        ? "hesablanır…"
+                        : custom && "error" in custom
+                          ? custom.error
+                          : override?.label}
+                </span>
+              </span>
+            </label>
             <div className="grid grid-cols-2 gap-1">
               {poiNames.map((name) => {
                 const on = poiCategories.includes(name);
@@ -331,6 +439,9 @@ export function MapPanel({
           {mode === "delta"
             ? `${VERSION_LABELS[pair[0]]} → ${VERSION_LABELS[pair[1]]}`
             : VERSION_LABELS[shownVersion]}
+          {mode === "band" && override ? (
+            <span className="ml-1.5 font-normal text-[var(--brand-600)]">· {override.label}</span>
+          ) : null}
         </span>
         <span className="text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">
           {mode === "delta" ? "Aşağı" : "1"}
@@ -358,6 +469,8 @@ export function MapPanel({
           compare={pair}
           pois={poiLayers}
           groups={groups}
+          onShowInTable={onShowInTable}
+          override={mode === "band" ? override : null}
         />
       ) : (
         <Skeleton className="h-full min-h-[600px] w-full" />

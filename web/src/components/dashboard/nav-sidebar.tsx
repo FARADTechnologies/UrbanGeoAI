@@ -13,6 +13,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ShieldCheck,
+  Table2,
   TrainFront
 } from "lucide-react";
 
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 export type View =
   | "overview"
   | "map"
+  | "objects"
   | "enrichment"
   | "h10"
   | "verification"
@@ -51,6 +53,7 @@ type Props = {
 const ITEMS: Omit<NavItem, "pill">[] = [
   { id: "overview", icon: LayoutDashboard, label: "İcmal" },
   { id: "map", icon: MapIcon, label: "Xəritə" },
+  { id: "objects", icon: Table2, label: "Obyekt cədvəli" },
   { id: "enrichment", icon: Database, label: "OSM zənginləşdirmə" },
   { id: "h10", icon: BadgeCheck, label: "H10 yoxlaması" },
   { id: "verification", icon: FlaskConical, label: "Metod yoxlaması" },

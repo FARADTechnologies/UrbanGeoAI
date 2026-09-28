@@ -1,4 +1,4 @@
-import type { CellLayer, PoiLayers, Summary } from "@/types/data";
+import type { CellLayer, PoiDetail, PoiInfo, PoiLayers, Summary } from "@/types/data";
 
 /**
  * Statik veri dosyalarını okur.
@@ -28,6 +28,54 @@ export function loadCells(resolution: number) {
 
 export function loadPoi() {
   return loadJson<PoiLayers>("poi.json");
+}
+
+let poiInfo: Promise<PoiInfo | null> | null = null;
+
+/** Obyekt kartlarının məlumatı. İlk klikdə bir dəfə yüklənir (~1 MB). */
+export function loadPoiInfo() {
+  poiInfo ??= loadJson<PoiInfo>("poi-info.json");
+  return poiInfo;
+}
+
+/** Yalnız http(s) keçidləri; sxemsiz ünvana https əlavə olunur. */
+export function safeUrl(value: string | undefined): string | null {
+  if (!value) return null;
+  const url = /^[a-z][a-z0-9+.-]*:/i.test(value) ? value : `https://${value}`;
+  return /^https?:\/\//i.test(url) ? url : null;
+}
+
+/** Obyektin şəkli: birbaşa keçid və ya Wikimedia Commons faylı. */
+export function imageUrl(d: PoiDetail): string | null {
+  if (d.image && /^https?:\/\//i.test(d.image)) return d.image;
+  const file = d.commons?.startsWith("File:") ? d.commons.slice(5) : null;
+  return file
+    ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=480`
+    : null;
+}
+
+export function googleMapsUrl(lat: number, lon: number) {
+  return `https://www.google.com/maps/search/?api=1&query=${lat.toFixed(6)},${lon.toFixed(6)}`;
+}
+
+export function osmUrl(id: string | undefined) {
+  return id && /^(node|way|relation)\/\d+$/.test(id) ? `https://www.openstreetmap.org/${id}` : null;
+}
+
+/** "az:Başlıq" → Vikipediya səhifəsi. */
+export function wikipediaUrl(value: string | undefined) {
+  if (!value) return null;
+  const [lang, ...rest] = value.split(":");
+  const title = rest.join(":");
+  return title && /^[a-z-]{2,12}$/.test(lang)
+    ? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title.replaceAll(" ", "_"))}`
+    : null;
+}
+
+export function instagramUrl(value: string | undefined) {
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  return `https://www.instagram.com/${encodeURIComponent(value.replace(/^@/, ""))}`;
 }
 
 /** API xidmətinin ünvanı. ``NEXT_PUBLIC_API_URL`` ilə dəyişdirilə bilər. */

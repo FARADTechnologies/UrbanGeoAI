@@ -14,11 +14,12 @@ import { H10View } from "@/components/views/h10";
 import { VerificationView } from "@/components/views/verification";
 import { IndicesView } from "@/components/views/indices";
 import { MetroView } from "@/components/views/metro";
+import { ObjectsView } from "@/components/views/objects";
 import { OverviewView } from "@/components/views/overview";
 import { ProposalsView } from "@/components/views/proposals";
 import { ValidationView } from "@/components/views/validation";
 import { formatCount, loadCells, loadPoi, loadSummary } from "@/lib/data";
-import type { CellLayer, PoiLayers, Summary } from "@/types/data";
+import type { CellLayer, PoiLayers, PoiSelection, Summary } from "@/types/data";
 
 /** Yan panelin daraldılmış halı yenidən yüklənəndə də qalsın. */
 const RAIL_KEY = "urbangeoai-rail-collapsed";
@@ -31,6 +32,10 @@ const TITLES: Record<View, { title: string; subtitle: string }> = {
   map: {
     title: "Xəritə",
     subtitle: "H3 hüceyrələri üzərində əlçatanlıq balı, POI qatı və iki sürüm arasındakı fərq"
+  },
+  objects: {
+    title: "Obyekt cədvəli",
+    subtitle: "Hesablamaya girən bütün obyektlər — ad, mənbə, koordinat, məlumat; CSV kimi yüklənə bilir"
   },
   enrichment: {
     title: "OSM zənginləşdirmə",
@@ -78,6 +83,11 @@ export default function Page() {
   const [layers, setLayers] = useState<Record<number, CellLayer>>({});
   const [loadingLayer, setLoadingLayer] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [tableFocus, setTableFocus] = useState<PoiSelection | null>(null);
+  const showInTable = useCallback((selection: PoiSelection) => {
+    setTableFocus(selection);
+    setView("objects");
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -214,8 +224,16 @@ export default function Page() {
                   resolutions={summary.meta.mapResolutions}
                   onResolutionChange={setResolution}
                   loading={loadingLayer}
+                  onShowInTable={showInTable}
+                  scoreFiles={(summary as unknown as { scoreFiles?: Record<string, { file: string; categories: string[] }> }).scoreFiles}
+                  groupMembers={Object.fromEntries(
+                    Object.entries(summary.pca).map(([g, info]) => [g, info.members])
+                  )}
+                  scoreCells={summary.meta.cells}
                 />
               </DashboardCard>
+            ) : view === "objects" ? (
+              <ObjectsView poi={poi} focus={tableFocus} />
             ) : view === "enrichment" ? (
               <EnrichmentView summary={summary} />
             ) : view === "h10" ? (

@@ -118,3 +118,17 @@ def test_merge_keeps_local_rows_and_marks_sources():
     merged = enrich.merge(pool, additions)
     assert list(merged["coffee"]["source"]) == ["yerli", "osm"]
     assert list(merged["bus"]["source"]) == ["yerli"]
+
+
+def test_osm_info_takes_first_filled_tag_and_joins_address():
+    info = enrich.osm_info(
+        {
+            "contact:website": "example.az",
+            "phone": "+994 12 000 00 00",
+            "addr:street": "Nizami küçəsi",
+            "addr:housenumber": "10",
+            "amenity": "cafe",
+        }
+    )
+    assert info == {"web": "example.az", "phone": "+994 12 000 00 00", "addr": "Nizami küçəsi 10"}
+    assert enrich.osm_info({"amenity": "cafe"}) == {}

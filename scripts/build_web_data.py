@@ -41,6 +41,7 @@ from urbangeoai import (  # noqa: E402
     catalogue,
     config,
     console,
+    dedupe,
     grid,
     indices,
     pipeline,
@@ -66,6 +67,67 @@ def points(frame: pd.DataFrame) -> list[list[float]]:
         [round(float(a), 5), round(float(b), 5)]
         for a, b in zip(frame["lat"], frame["lon"], strict=True)
     ]
+
+
+def write_scores(out: Path, version: str, scores: pd.DataFrame) -> dict:
+    """H10 kategori skorlarını ikili dosyaya yazar (seçilen obyektlərə görə bal).
+
+    Kategori sırasıyla, her kategori hücre sırasında (cells-r10.json ile aynı)
+    float16. Yarım duyarlık üç anlamlı basamak verir; sıfır tam sıfır kalır,
+    yani "3 km'de hiç nesne yok" tabanı bozulmaz. Dosya 18 kategori için
+    ~4 MB; yalnız panelde anahtar açılınca indirilir.
+    """
+    columns = [c for c in scores.columns if c.endswith("_score")]
+    values = scores[columns].to_numpy(dtype=np.float64).T
+    if np.nanmax(values) > np.finfo(np.float16).max:
+        raise ValueError("skor float16 aralığını aşıyor")
+    name = f"scores-{version}.bin"
+    (out / name).write_bytes(values.astype("<f2").tobytes())
+    return {"file": name, "categories": [c.removesuffix("_score") for c in columns]}
+
+
+def _info(value) -> dict:
+    if isinstance(value, str) and value:
+        return json.loads(value)
+    return {}
+
+
+def poi_details(frame: pd.DataFrame, category: str, candidates: pd.DataFrame | None) -> list[dict]:
+    """Nesne kartı için her noktanın bilgisi, ``points`` ile aynı sırada.
+
+    Yerel kaydın kendi etiketi yok; yakında aynı adla bir OSM nesnesi varsa
+    onun sitesi, telefonu, resmi karta taşınır ve OSM sayfasına bağlanır.
+    Eşleşme ad + konumla (``dedupe.NameIndex``); yalnız konuma bakılsaydı yan
+    binadaki kafenin sitesi yanlış yere yazılabilirdi.
+    """
+    index = None
+    if candidates is not None and category in dedupe.NAME_RADIUS_M:
+        own = candidates[candidates["category"] == category]
+        if len(own):
+            index = dedupe.NameIndex(own, named=True)
+    radius = dedupe.NAME_RADIUS_M.get(category, dedupe.DEFAULT_NAME_RADIUS_M)
+    out = []
+    for row in frame.itertuples(index=False):
+        row = row._asdict()
+        name = str(row.get("name") or "")
+        std = str(row.get("name_std") or name)
+        item: dict = {"n": std} if std else {}
+        if name and name != std:
+            item["o"] = name
+        info = _info(row.get("info"))
+        osm_id = row.get("osm_id")
+        if row.get("source") == "yerli" and index is not None and name:
+            hit = index.find(row["lat"], row["lon"], [name], radius)
+            if hit is not None:
+                match = index.frame.iloc[hit[0]]
+                info = {**_info(match.get("info")), **info}
+                osm_id, row["osm_type"] = match["osm_id"], match["osm_type"]
+                item["m"] = 1  # OSM karşılığı adla bulundu
+        if osm_id is not None and not pd.isna(osm_id) and str(osm_id) not in ("", "-1"):
+            item["id"] = f"{row.get('osm_type') or 'node'}/{int(osm_id)}"
+        item.update(info)
+        out.append(item)
+    return out
 
 
 def main() -> int:
@@ -115,6 +177,7 @@ def main() -> int:
 
     bands: dict[str, dict[str, np.ndarray]] = {}
     walk_ratio: dict[str, float] = {}
+    score_files: dict[str, dict] = {}
     for version, _ in versions:
         if version == WALK[0]:
             print("skorlar · piyada (yol ağı)…")
@@ -132,9 +195,11 @@ def main() -> int:
             bands[version] = {}
             for group, model in models.items():
                 _, bands[version][group] = indices.score_group(scores, model)
+            score_files[version] = write_scores(args.out, version, scores)
             continue
         print(f"skorlar · {version}…")
         scores = pd.concat([cells, pipeline.category_scores(cells, pools[version])], axis=1)
+        score_files[version] = write_scores(args.out, version, scores)
         bands[version] = {}
         for group, model in models.items():
             if all(f"{m}_score" in scores.columns for m in model.members):
@@ -174,6 +239,11 @@ def main() -> int:
             parent = [h3.cell_to_parent(c, resolution) for c in cells.h3_index]
             coarse = frame.groupby(parent).mean()
             keys = list(coarse.index)
+            # H10 hücresinin bu seviyedeki üst hücresinin sırası: tarayıcı
+            # seçilen obyektlərə görə balı H10'da hesaplayıp buna göre ortalar.
+            (args.out / f"parents-r{resolution}.bin").write_bytes(
+                coarse.index.get_indexer(parent).astype("<i4").tobytes()
+            )
             values = {
                 v: {g: [round(float(x), 2) for x in coarse[f"{v}|{g}"]] for g in bands[v]}
                 for v, _ in versions
@@ -193,6 +263,29 @@ def main() -> int:
         else {k: points(f) for k, f in additions.groupby("category")},
     }
     (args.out / "poi.json").write_text(json.dumps(poi, separators=(",", ":")), encoding="utf-8")
+
+    # Nesne kartı: poi.json'daki her noktanın adı ve (varsa) OSM bilgisi,
+    # aynı sırada. Yalnız karta tıklanınca yüklenir.
+    print("nesne kartları…")
+    cand_path = output / "osm_candidates.csv"
+    candidates = (
+        pd.read_csv(cand_path, encoding="utf-8", keep_default_na=False)
+        if cand_path.exists()
+        else None
+    )
+    details = {
+        "2025": {k: poi_details(f, k, None) for k, f in pools["2025"].items()},
+        "2026": {k: poi_details(f, k, candidates) for k, f in pools["2026"].items()},
+        "osm": {}
+        if additions is None
+        else {
+            k: poi_details(f.assign(source="osm"), k, None)
+            for k, f in additions.groupby("category")
+        },
+    }
+    (args.out / "poi-info.json").write_text(
+        json.dumps(details, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+    )
 
     # ── Özet ─────────────────────────────────────────────────────────
     print("doğrulama…")
@@ -268,6 +361,7 @@ def main() -> int:
         "teamComparison": read_json(output / "team_comparison.json"),
         "bandCheck": read_json(output / "band_check.json"),
         "walkMeta": read_json(output / "walk_meta.json"),
+        "scoreFiles": score_files,
         "duplicates": read_json(output / "duplicates.json"),
         "walking": {
             "available": walk_path.exists(),
