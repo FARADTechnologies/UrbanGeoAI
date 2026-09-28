@@ -86,7 +86,7 @@ jobs:
             osrm-customize /data/azerbaijan-latest.osrm
           docker run -d --name osrm -p 127.0.0.1:5000:5000 -v "$PWD/cache/osrm:/data" "$OSRM_IMAGE" \
             osrm-routed --algorithm mld --max-table-size 20000 /data/azerbaijan-latest.osrm
-          for i in $(seq 1 30); do
+          for _ in $(seq 1 30); do
             curl -sf "http://127.0.0.1:5000/table/v1/foot/49.852,40.3777;49.853,40.378" >/dev/null && break
             sleep 2
           done
