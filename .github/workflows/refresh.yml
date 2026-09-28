@@ -1,0 +1,162 @@
+name: Veri yeniləmə və yayım
+
+# Bütün hesablama bulutda: heç bir şəxsi kompüter lazım deyil.
+#
+#   xəritə (Geofabrik) → OSRM (piyada) → OSM zənginləşdirmə → təkrar təmizliyi
+#   → indekslər → piyada skorları → yoxlamalar → panel veriləri
+#   → API (Cloud Run) → panel (Firebase Hosting)
+#
+# Ham veri ayrıca özəl depodadır (UrbanGeoAI-data). Yeni veri gələndə fayllar
+# oraya qoyulur və bu iş əl ilə (Actions → Run workflow) və ya 3 ayda bir
+# avtomatik işləyir.
+#
+# Lazım olan sirlər:
+#   DATA_DEPLOY_KEY — UrbanGeoAI-data deposunu oxumaq üçün (yalnız oxuma)
+#   GCP_SA_KEY      — urbangeoai Google layihəsinin xidmət hesabı (Cloud Run + Hosting)
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "API və paneli yayımla"
+        type: boolean
+        default: true
+  schedule:
+    # Yanvar, aprel, iyul, oktyabr — ayın 1-i, 03:00 UTC.
+    - cron: "0 3 1 1,4,7,10 *"
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  GCP_PROJECT: urbangeoai
+  GCP_REGION: europe-west1
+  API_SERVICE: urbangeoai-api
+  API_IMAGE: europe-west1-docker.pkg.dev/urbangeoai/urbangeoai/api
+  # Yerel hesabla eyni OSRM (v26.9.0), dəyişməsin deyə digest ilə.
+  OSRM_IMAGE: ghcr.io/project-osrm/osrm-backend@sha256:8a1b1bc938412f15f9b5b32d794c4ec6bf4a85dfbbabfa0a014b70b187edb53b
+  PBF_URL: https://download.geofabrik.de/asia/azerbaijan-latest.osm.pbf
+
+jobs:
+  refresh:
+    name: Hesablama və yayım
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ham veri (özəl depo)
+        uses: actions/checkout@v4
+        with:
+          repository: FARADTechnologies/UrbanGeoAI-data
+          ssh-key: ${{ secrets.DATA_DEPLOY_KEY }}
+          path: data-repo
+
+      - name: Konfiqurasiya
+        run: cp data-repo/config/paths.ci.yml config/paths.yml
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Asılılıqlar
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Testlər
+        run: pytest -q -p no:warnings
+
+      - name: OSRM — Azərbaycan xəritəsi və piyada profili
+        run: |
+          mkdir -p cache/osrm
+          curl -sSfL -o cache/osrm/azerbaijan-latest.osm.pbf "$PBF_URL"
+          docker run --rm -v "$PWD/cache/osrm:/data" "$OSRM_IMAGE" \
+            osrm-extract -p /opt/foot.lua /data/azerbaijan-latest.osm.pbf
+          docker run --rm -v "$PWD/cache/osrm:/data" "$OSRM_IMAGE" \
+            osrm-partition /data/azerbaijan-latest.osrm
+          docker run --rm -v "$PWD/cache/osrm:/data" "$OSRM_IMAGE" \
+            osrm-customize /data/azerbaijan-latest.osrm
+          docker run -d --name osrm -p 127.0.0.1:5000:5000 -v "$PWD/cache/osrm:/data" "$OSRM_IMAGE" \
+            osrm-routed --algorithm mld --max-table-size 20000 /data/azerbaijan-latest.osrm
+          for i in $(seq 1 30); do
+            curl -sf "http://127.0.0.1:5000/table/v1/foot/49.852,40.3777;49.853,40.378" >/dev/null && break
+            sleep 2
+          done
+
+      - name: Boru xətti
+        run: |
+          python scripts/enrich_osm.py
+          python scripts/check_duplicates.py
+          python scripts/build_indices.py
+          python scripts/build_walking.py
+          python scripts/check_bands.py
+          python scripts/verify_h10.py
+          python scripts/compare_versions.py --json out/comparison.json
+          python scripts/compare_team.py
+          python scripts/build_web_data.py
+          python scripts/build_api_bundle.py
+
+      - name: Nəticələri saxla
+        uses: actions/upload-artifact@v4
+        with:
+          name: out-${{ github.run_number }}
+          path: |
+            out/*.csv
+            out/*.json
+          retention-days: 90
+
+      - name: Google Cloud girişi
+        if: ${{ github.event_name == 'schedule' || inputs.deploy }}
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: gcloud
+        if: ${{ github.event_name == 'schedule' || inputs.deploy }}
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: API — Cloud Run
+        if: ${{ github.event_name == 'schedule' || inputs.deploy }}
+        run: |
+          gcloud services enable run.googleapis.com artifactregistry.googleapis.com --project "$GCP_PROJECT"
+          gcloud artifacts repositories describe urbangeoai --location "$GCP_REGION" --project "$GCP_PROJECT" >/dev/null 2>&1 \
+            || gcloud artifacts repositories create urbangeoai --repository-format docker \
+                 --location "$GCP_REGION" --project "$GCP_PROJECT"
+          gcloud auth configure-docker "$GCP_REGION-docker.pkg.dev" --quiet
+          docker build -f deploy/api/Dockerfile -t "$API_IMAGE:${{ github.sha }}" .
+          docker push "$API_IMAGE:${{ github.sha }}"
+          gcloud run deploy "$API_SERVICE" --image "$API_IMAGE:${{ github.sha }}" \
+            --region "$GCP_REGION" --project "$GCP_PROJECT" \
+            --allow-unauthenticated --memory 1Gi --cpu 1 --min-instances 0 --max-instances 3
+          echo "API_URL=$(gcloud run services describe "$API_SERVICE" --region "$GCP_REGION" \
+            --project "$GCP_PROJECT" --format 'value(status.url)')" >> "$GITHUB_ENV"
+
+      - name: Node
+        if: ${{ github.event_name == 'schedule' || inputs.deploy }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Panel — Firebase Hosting
+        if: ${{ github.event_name == 'schedule' || inputs.deploy }}
+        run: |
+          npm ci --prefix web
+          NEXT_PUBLIC_API_URL="$API_URL" npm run build --prefix web
+          npx --yes firebase-tools@14 deploy --only hosting --project "$GCP_PROJECT" --non-interactive
+
+      - name: Yoxlama
+        if: ${{ github.event_name == 'schedule' || inputs.deploy }}
+        run: |
+          curl -sf "$API_URL/health"
+          curl -sf https://urbangeoai.web.app/data/summary.json >/dev/null
+          echo "API: $API_URL"

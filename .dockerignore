@@ -1,0 +1,8 @@
+# API imajına yalnız kaynak kod ve out/api paketi girer.
+*
+!pyproject.toml
+!README.md
+!src/
+!scripts/serve_api.py
+!out/api/
+**/__pycache__
