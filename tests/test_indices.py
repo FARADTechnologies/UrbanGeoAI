@@ -208,3 +208,24 @@ def test_two_distinct_values_still_span_the_scale():
     bands = indices.apply_bands(index, floor, edges)
     assert bands.min() == 1
     assert bands.max() == indices.N_BANDS
+
+
+def test_fit_and_score_agree_on_the_floor():
+    """Uydururken ve puanlarken indeks aynı formülle hesaplanmalı.
+
+    Önceden fit pca.transform ile, score matris çarpımıyla hesaplıyordu; 1e-16
+    farkla tabandaki (sıfır skorlu) hücreler bant 1'i kaçırıyordu.
+    """
+    rng = np.random.default_rng(3)
+    n = 20_000
+    zero = rng.random(n) < 0.3  # 3 km'de hiç nesne yok
+    frame = pd.DataFrame(
+        {
+            f"{c}_score": np.where(zero, 0.0, rng.gamma(1.5, 2.0, n) * (i + 1))
+            for i, c in enumerate(["a", "b", "c", "d"])
+        }
+    )
+    model = indices.fit_group(frame, ["a", "b", "c", "d"])
+    _, bands = indices.score_group(frame, model)
+    assert (bands == 1).sum() == zero.sum()
+    assert set(np.unique(bands)) == set(range(1, 11))

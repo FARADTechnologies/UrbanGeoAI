@@ -46,6 +46,25 @@ class GroupModel:
     edges: list[float]
 
 
+#: İndeks bantlanmadan önce bu kadar ondalığa yuvarlanır.
+INDEX_DECIMALS = 10
+
+
+def compute_index(values, mean, scale, components) -> np.ndarray:
+    """Standartlaştırılmış skorların bileşen ağırlıklı toplamı.
+
+    Sonuç ``INDEX_DECIMALS`` ondalığa yuvarlanır. Matris çarpımı özdeş iki
+    satıra son basamakta farklı sonuç verebiliyor (satırın bellekteki yerine
+    göre ~1e-16). Bant tabanı eşitlikle karşılaştırıldığı için bu gürültü
+    "3 km'de hiç nesne yok" hücrelerinin bir kısmını tabandan kaçırıyor, bant
+    1'i boşaltıp ara bantları kaydırıyordu (turizmdə 32 924 hücrenin yalnız
+    5'i tabanda kalmıştı). Yuvarlama anlamlı farkların çok altında; eşit
+    erişilebilirlik yeniden eşit indeks verir.
+    """
+    standardised = (np.asarray(values, float) - np.asarray(mean)) / np.asarray(scale)
+    return np.round(standardised @ np.asarray(components), INDEX_DECIMALS)
+
+
 def fit_group(frame: pd.DataFrame, members: list[str]) -> GroupModel:
     """Bir grubun skorlarından tek bileşenli indeks modelini uydurur.
 
@@ -68,7 +87,9 @@ def fit_group(frame: pd.DataFrame, members: list[str]) -> GroupModel:
     flip = -1.0 if component.sum() < 0 else 1.0
     component = component * flip
 
-    index = (pca.transform(scaler.transform(values)).ravel()) * flip
+    # Bant sınırları score_group'la birebir aynı hesaptan çıkarılmalı (bkz.
+    # compute_index).
+    index = compute_index(values, scaler.mean_, scaler.scale_, component)
     floor, edges = fit_bands(index)
 
     return GroupModel(
@@ -156,8 +177,7 @@ def score_group(frame: pd.DataFrame, model: GroupModel) -> tuple[np.ndarray, np.
     """
     columns = [f"{m}_score" for m in model.members]
     values = frame[columns].to_numpy()
-    standardised = (values - np.asarray(model.mean)) / np.asarray(model.scale)
-    index = standardised @ np.asarray(model.components)
+    index = compute_index(values, model.mean, model.scale, model.components)
     return index, apply_bands(index, model.floor, model.edges)
 
 
