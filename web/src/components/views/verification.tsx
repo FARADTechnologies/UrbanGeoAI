@@ -54,7 +54,7 @@ export function VerificationView({ summary }: { summary: Summary }) {
   const team = s.teamComparison;
   const bands = s.bandCheck;
   const walking = s.walking;
-  const google = s.google;
+  const walkMeta = s.walkMeta;
 
   return (
     <>
@@ -292,8 +292,12 @@ export function VerificationView({ summary }: { summary: Summary }) {
       {walking?.available ? (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           <DashboardCard
-            title="Quş uçuşu ↔ piyada (yol şəbəkəsi)"
-            subtitle="OpenStreetMap yol şəbəkəsi: 512 728 düyün · yol məsafəsi quş uçuşunun median 1.40 qatı"
+            title="Quş uçuşu ↔ piyada (OSRM)"
+            subtitle={
+              walkMeta?.engine === "osrm"
+                ? `OSRM «foot» profili · ${formatCount(walkMeta.objects)} obyekt · öz kompüterimizdə, pulsuz və limitsiz`
+                : "OpenStreetMap yol şəbəkəsi üzərindən"
+            }
           >
             <div className="overflow-x-auto">
               <table className="w-full min-w-[440px] border-separate border-spacing-0 text-[12px]">
@@ -320,32 +324,50 @@ export function VerificationView({ summary }: { summary: Summary }) {
               </table>
             </div>
             <p className="mt-3 text-[11.5px] leading-relaxed text-muted-foreground">
-              Eyni formul (exp(−β × dəqiqə)), eyni model — yalnız məsafə yol üzərindən ölçülür. Dəmiryolu, çevrə yolu və
-              dəniz artıq nəzərə alınır. Xəritədə «Məsafə: Piyada» seçərək və ya «Dəyişim → Quş uçuşu → piyada» ilə
+              Eyni formul (exp(−β × dəqiqə)), eyni model — yalnız məsafə OSRM ilə yol üzərindən ölçülür. Dəmiryolu,
+              çevrə yolu və dəniz artıq nəzərə alınır. Xəritədə «Məsafə: Piyada» seçərək və ya «Dəyişim → Quş uçuşu → piyada» ilə
               fərqi hüceyrə-hüceyrə görmək olar.
             </p>
           </DashboardCard>
 
-          <DashboardCard title="Google Routes API" subtitle="Piyada məsafəsinin Google ilə yoxlanması">
-            {google?.status === "ok" ? (
-              <p className="text-[12px]">
-                {google.summary.pairs} cüt · OSM/Google median {google.summary.osm_over_google_median} ·{" "}
-                {google.summary.within_15pct}% cüt ±15% daxilində
+          <DashboardCard title="Piyada motoru: OSRM" subtitle="Google API ləğv edildi — yerli, açıq mənbəli motor">
+            <div className="space-y-2 text-[12px] leading-relaxed">
+              <p className="text-muted-foreground">
+                OSRM (Open Source Routing Machine) OpenStreetMap yolları üzərində ən qısa yolu tapır; openstreetmap.org-dakı
+                piyada marşrutu da onunla işləyir. «foot» profili səki, cığır, pilləkən və park yollarını istifadə edir,
+                avtomagistralı və girişi qadağan yolları çıxarır, birtərəfli yol məhdudiyyətini piyadaya tətbiq etmir.
               </p>
-            ) : (
-              <div className="space-y-2 text-[12px] leading-relaxed">
-                <div className="flex items-center gap-2">
-                  <Tick ok={false} />
-                  <span className="font-semibold">Açar işləmir: {google?.reason ?? "yoxlanmayıb"}</span>
-                </div>
-                <p className="text-muted-foreground">
-                  Göndərilən açar veb-sayt (HTTP referrer) ilə məhdudlaşdırılıb və yalnız ekibin öz saytından, brauzerdə
-                  işləyir. Nə serverdən, nə də urbangeoai.web.app-dan çağırmaq olur. Bu, platformanın xəritə açarıdır.
-                </p>
-                <p className="font-medium">Lazım olan: ayrıca server açarı — API məhdudiyyəti «Routes API», tətbiq
-                  məhdudiyyəti «IP ünvanları», layihədə billing aktiv.</p>
-              </div>
-            )}
+              <p className="text-muted-foreground">
+                Yolların özü OpenStreetMap-dəndir — rəsmi qurumun təsdiqlədiyi deyil, könüllülərin çəkdiyi veridir. Bakı
+                mərkəzində əhatə yaxşıdır, kənar qəsəbələrdə zəifdir. Google da daxil bütün alternativlər eyni məhdudiyyəti
+                daşıyır.
+              </p>
+              {walkMeta?.engines ? (
+                <>
+                  <div className="pt-1 font-semibold">Öz şəbəkəmizlə müqayisə (eyni OSM, sadə Dijkstra)</div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[360px] border-separate border-spacing-0 text-[11.5px]">
+                      <thead>
+                        <tr>
+                          <Th>Kateqoriya</Th>
+                          <Th right>Spearman</Th>
+                          <Th right>OSRM / şəbəkə</Th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(walkMeta.engines).map(([k, r]: [string, any]) => (
+                          <tr key={k}>
+                            <Td>{categoryLabel(k)}</Td>
+                            <Td right>{r.spearman.toFixed(3)}</Td>
+                            <Td right>{r.ratio_median ?? "—"}</Td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : null}
+            </div>
           </DashboardCard>
         </div>
       ) : null}

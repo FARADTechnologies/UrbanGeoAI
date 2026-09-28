@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 """OpenStreetMap yaya mesafesini Google'ın yaya mesafesiyle sınar.
 
+**Şu an kullanılmıyor** (2026-09-28 kararı: Google API ücret nedeniyle iptal,
+yaya mesafesi OSRM ile yerelde hesaplanıyor — ``urbangeoai.osrm``). Kod ileride
+gerekirse diye duruyor; boru hattı ve panel buna bağlı değil.
+
 Rastgele hücrelerden en yakın okula, parka, metroya giden yollar hem bizim
 yol ağımızla hem Google Routes API ile ölçülür. İkisi yakınsa toplu hesabı
 güvenle OSM ile yapabiliriz demektir.
