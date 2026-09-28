@@ -9,8 +9,20 @@ kapsam düzeldi, metro listesi temizlendi.
 **Yöntem etkisi.** Bant sınırları, işaret sabitlemesi, sürekli mesafe azalımı
 ve konsert zalının çıkarılması. Bunlar aynı veriyle bile farklı sonuç verir.
 
-Betik ikisini ayrı ölçer: önce eski yöntemi iki veri sürümüne uygular (saf veri
-etkisi), sonra aynı veriye iki yöntemi uygular (saf yöntem etkisi).
+Betik ikisini ayrı ölçer:
+
+- **Veri etkisi**: iki veri sürümü aynı (güncel) yöntemle puanlanır ve **aynı
+  cetvelle** ölçülür — model ve bant sınırları 2025'e uydurulup dondurulur,
+  2026'ya aynen uygulanır. Her sürüm için model yeniden uydurulsaydı bantlar
+  her sürümde yine eşit dağılırdı ve ortalama değişim yapısı gereği sıfıra
+  yakın çıkardı: mutlak iyileşme görünmez, yalnız sıra değişimi görünürdü.
+- **Yöntem etkisi**: aynı veriye (2026) eski ve yeni yöntem uygulanır; her
+  yöntem kendi modeliyle. Burada soru "sıra ne kadar değişti" olduğu için
+  ayrı uydurma doğru karşılaştırmadır.
+
+Metro iki sürümde de bugünkü OSM listesinden gelir (2025'in metro listesi
+yok); bu yüzden veri etkisinde metro değişimi yer almaz. Yerel dosyalar
+boru hattıyla aynı şekilde tekrarlardan arındırılır.
 
 Kullanım:
     python scripts/compare_versions.py
@@ -39,6 +51,7 @@ from urbangeoai import (  # noqa: E402
     io,
     metro,
     osm,
+    pipeline,
     scoring,
 )
 
@@ -77,7 +90,8 @@ def load_category(name: str, base: Path, sources: dict, settings) -> pd.DataFram
         return metro.deduplicate_with_config(osm.nodes_to_records(payload), settings.metro).frame()
     fname, typ = sources[name]
     frame = io.read_poi(base / fname).frame
-    return io.filter_type(frame, typ) if typ else frame
+    frame = io.filter_type(frame, typ) if typ else frame
+    return pipeline.clean(frame, name).kept
 
 
 def legacy_score(cells: pd.DataFrame, poi: pd.DataFrame, beta: float) -> np.ndarray:
@@ -168,8 +182,8 @@ def main() -> int:
     members = sorted({x for m in comparable.values() for x in m})
 
     print("puanlanıyor…")
-    old_legacy = build(
-        cells, settings.paths.raw_previous, LEGACY_SOURCES, members, settings, "legacy"
+    old_current = build(
+        cells, settings.paths.raw_previous, LEGACY_SOURCES, members, settings, "current"
     )
     new_legacy = build(
         cells, settings.paths.raw_current, catalogue.SOURCES, members, settings, "legacy"
@@ -180,12 +194,15 @@ def main() -> int:
 
     data_effect, method_effect = {}, {}
     for group, mem in comparable.items():
-        a_i, a_b = index_of(old_legacy, mem, "legacy")
-        b_i, b_b = index_of(new_legacy, mem, "legacy")
+        # Veri etkisi: 2025'e uydurulan cetvel 2026'ya aynen uygulanır.
+        ruler = indices.fit_group(old_current, mem)
+        a_i, a_b = indices.score_group(old_current, ruler)
+        b_i, b_b = indices.score_group(new_current, ruler)
         data_effect[group] = compare(a_i, a_b, b_i, b_b)
 
+        l_i, l_b = index_of(new_legacy, mem, "legacy")
         c_i, c_b = index_of(new_current, mem, "current")
-        method_effect[group] = compare(b_i, b_b, c_i, c_b)
+        method_effect[group] = compare(l_i, l_b, c_i, c_b)
 
     def show(title, table, note):
         print("\n" + "=" * 92)
@@ -205,9 +222,9 @@ def main() -> int:
             )
 
     show(
-        "VERİ ETKİSİ  —  aynı yöntem, 2025 → 2026 verisi",
+        "VERİ ETKİSİ  —  aynı yöntem ve aynı cetvel (2025'e dondurulmuş), 2025 → 2026 verisi",
         data_effect,
-        "Yalnızca veri değişti. Hareket gerçek bir değişimi gösterir.",
+        "Yalnızca veri değişti. Yukarı = o hücrenin çevresinde hizmet gerçekten arttı.",
     )
     show(
         "YÖNTEM ETKİSİ  —  aynı veri (2026), eski → yeni yöntem",
@@ -221,6 +238,8 @@ def main() -> int:
             json.dumps(
                 {
                     "cells": int(len(cells)),
+                    "data_effect_ruler": "2025 (frozen)",
+                    "metro_same_in_both": True,
                     "data_effect": data_effect,
                     "method_effect": method_effect,
                 },
