@@ -1,6 +1,7 @@
 "use client";
 
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
+import { DuplicatesCard } from "@/components/views/duplicates";
 import { formatCount } from "@/lib/data";
 import type { FileReport, Summary } from "@/types/data";
 
@@ -34,6 +35,7 @@ export function ValidationView({ summary }: { summary: Summary }) {
 
   return (
     <>
+      <DuplicatesCard data={(summary as unknown as { duplicates?: unknown }).duplicates} />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           { key: "error", label: "Xətalı fayl" },
