@@ -170,3 +170,33 @@ export type PoiLayers = {
   "2026": Record<string, Points>;
   osm: Record<string, Points>;
 };
+
+/** Nesne kartı: poi.json'daki her noktanın bilgisi, aynı sırada. */
+export type PoiDetail = {
+  /** Standart ad. */
+  n?: string;
+  /** Orijinal ad (standart addan farklıysa). */
+  o?: string;
+  /** OSM nesnesi, "node/123". */
+  id?: string;
+  /** Yerel kaydın OSM karşılığı ad ilə tapıldı. */
+  m?: number;
+  web?: string;
+  phone?: string;
+  hours?: string;
+  image?: string;
+  commons?: string;
+  wikidata?: string;
+  wikipedia?: string;
+  cuisine?: string;
+  stars?: string;
+  instagram?: string;
+  addr?: string;
+};
+
+export type PoiKey = "2025" | "2026" | "osm";
+
+export type PoiInfo = Record<PoiKey, Record<string, PoiDetail[]>>;
+
+/** Xəritədə seçilən obyekt. */
+export type PoiSelection = { key: PoiKey; category: string; index: number };
