@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from urbangeoai import catalogue, dedupe, enrich, io, metro, osm, scoring
+from urbangeoai import catalogue, dedupe, enrich, io, metro, names, osm, scoring
 
 #: ``scripts/enrich_osm.py``'nin yazdığı ek dosyanın adı (çıktı dizininde).
 ADDITIONS_FILE = "osm_additions.csv"
@@ -41,7 +41,8 @@ def load_raw(base: Path, sources: dict, quiet: bool = False) -> dict[str, pd.Dat
                 print(f"  atlandı (dosya yok): {fname}", file=sys.stderr)
             continue
         frame = io.read_poi(path).frame
-        out[name] = io.filter_type(frame, typ) if typ else frame
+        frame = io.filter_type(frame, typ) if typ else frame
+        out[name] = names.standardise(frame)
     return out
 
 
